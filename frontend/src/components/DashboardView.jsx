@@ -20,6 +20,8 @@ import {
 export default function DashboardView({
   videoTitle = "Training nội bộ",
   clips = [],
+  sourceVideoUrl = '',
+  isAudioOnly = false,
   onSelectClip,
   onOpenUpload,
   onGoToEditor
@@ -59,7 +61,7 @@ export default function DashboardView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Find keywords or moments..."
+            placeholder="Tìm kiếm clip hoặc từ khóa..."
             className="w-full bg-[#161824] border border-[#272b3d] rounded-xl pl-9 pr-12 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium"
           />
           <span className="absolute right-3 top-2 px-1.5 py-0.2 rounded bg-[#222536] text-[10px] font-mono text-slate-400 border border-[#2e334a]">
@@ -69,24 +71,17 @@ export default function DashboardView({
 
         {/* Right: Credits, Notifications, Upload button */}
         <div className="flex items-center gap-3">
-          <button className="relative p-2 rounded-xl hover:bg-[#181a26] text-slate-400 hover:text-white transition-colors">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
-              4
-            </span>
-          </button>
-
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#161824] border border-[#272a3c] text-xs font-bold text-yellow-400">
             <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>AI Online</span>
+            <span>AI Studio Active</span>
           </div>
 
           <button
             onClick={onOpenUpload}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-brand-600/25 transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/25 transition-all active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Import Video</span>
+            <span>Nạp File Mới</span>
           </button>
         </div>
       </header>
@@ -99,24 +94,8 @@ export default function DashboardView({
             <button className="p-1.5 rounded-lg bg-[#222538] text-white">
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
-            <button className="p-1.5 rounded-lg text-slate-500 hover:text-white">
-              <List className="w-3.5 h-3.5" />
-            </button>
           </div>
-          <span className="font-bold text-sm text-white">Original clips ({filteredClips.length})</span>
-        </div>
-
-        {/* Right actions */}
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141622] hover:bg-[#1e2030] text-slate-300 border border-[#24273a] font-medium">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span>Filter</span>
-          </button>
-
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141622] hover:bg-[#1e2030] text-slate-300 border border-[#24273a] font-medium">
-            <Download className="w-3.5 h-3.5 text-slate-400" />
-            <span>Download All</span>
-          </button>
+          <span className="font-bold text-sm text-white">Danh sách Clips ({filteredClips.length})</span>
         </div>
       </div>
 
@@ -125,37 +104,41 @@ export default function DashboardView({
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
           <span>
-            A headline has been added to the first 5 seconds of your top ranked videos. If you'd like to refine it further, click <strong>"Edit Clip"</strong>.
+            AI đã tạo tiêu đề Hook và trích xuất các clip 1-4 phút đạt chuẩn 3 trụ cột (Hook - Problem - Solution). Nhấp vào clip để mở Studio chỉnh sửa.
           </span>
         </div>
-        <button 
-          onClick={() => setDisableHeadline(!disableHeadline)}
-          className="text-slate-400 hover:text-white underline text-[11px] shrink-0 ml-2"
-        >
-          {disableHeadline ? 'Enable headline' : 'Disable it'}
-        </button>
       </div>
 
       {/* ── Clips Grid View (Screenshot 1 Layout) ── */}
       <main className="flex-1 p-6 overflow-y-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
           {filteredClips.map((clip, index) => {
-            const score = clip.hook_score || (95 - index * 3);
+            const score = clip.overall_score || clip.hook_score || (95 - index * 3);
             const scoreColor = score >= 90 ? 'text-emerald-400' : score >= 80 ? 'text-yellow-400' : 'text-slate-300';
+            const cardVideoSrc = sourceVideoUrl || clip.blob_url || clip.video_path;
 
             return (
               <div key={clip.id} className="flex flex-col group select-none">
                 {/* 9:16 Vertical Video Card */}
                 <div 
-                  onClick={() => onSelectClip(clip)}
-                  className="relative aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-[#24273a] group-hover:border-brand-500/80 group-hover:shadow-xl group-hover:shadow-brand-500/10 transition-all cursor-pointer flex items-center justify-center"
+                  onClick={() => onSelectClip ? onSelectClip(clip) : onGoToEditor(clip)}
+                  className="relative aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-[#24273a] group-hover:border-indigo-500/80 group-hover:shadow-xl group-hover:shadow-indigo-500/10 transition-all cursor-pointer flex items-center justify-center"
                 >
-                  {/* Background Video Poster Preview */}
-                  <video
-                    src="http://127.0.0.1:8000/api/stream/source"
-                    className="w-full h-full object-cover pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity"
-                    muted
-                  />
+                  {/* Background Video Poster Preview hoặc Audio Visualizer */}
+                  {!isAudioOnly && cardVideoSrc ? (
+                    <video
+                      src={cardVideoSrc}
+                      className="w-full h-full object-cover pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity"
+                      muted
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-[#111322] to-black flex flex-col items-center justify-center p-4 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2 shadow-lg">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-bold text-indigo-300 uppercase">Audio Story</span>
+                    </div>
+                  )}
 
                   {/* Top Duration Pill */}
                   <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-white">
@@ -170,13 +153,6 @@ export default function DashboardView({
                       </div>
                     </div>
                   )}
-
-                  {/* Subtitle Karaoke on Video */}
-                  <div className="absolute bottom-6 left-2 right-2 text-center pointer-events-none">
-                    <p className="text-[12px] font-black uppercase text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                      <span className="text-yellow-400">VÀ ĐƯỢC XÁC</span>
-                    </p>
-                  </div>
 
                   {/* Center Play Button on Hover */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -574,7 +574,12 @@ export default function App() {
       localStorage.setItem('opus_current_project', JSON.stringify(pipelineData));
     } catch(e) {}
 
-    setCurrentView('editor');
+    // Nếu chọn Cắt Viral AI và có nhiều hơn 1 clip -> Hiện Dashboard để chọn, ngược lại vào thẳng Editor
+    if (pipelineData.processing_mode === 'viral_ai' && pipelineData.viral_clips.length > 1) {
+      setCurrentView('dashboard');
+    } else {
+      setCurrentView('editor');
+    }
   };
 
   const fetchData = async () => {
@@ -1964,6 +1969,8 @@ export default function App() {
           <DashboardView
             videoTitle={data?.video_metadata?.title}
             clips={data?.viral_clips || []}
+            sourceVideoUrl={data?.video_metadata?.blob_url || data?.video_metadata?.video_path}
+            isAudioOnly={Boolean(data?.video_metadata?.is_audio_only || data?.video_metadata?.media_type === 'audio')}
             onSelectClip={handleSelectClipToPreview}
             onOpenUpload={() => setCurrentView('upload')}
             onGoToEditor={handleGoToEditor}

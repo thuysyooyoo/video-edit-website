@@ -31,7 +31,9 @@ import { analyzeViralClipsClient } from '../utils/viralAnalyzerClient';
 
 export default function UploadView({ onProcessSuccess, isProcessing: externalIsProcessing }) {
   // 'video_upload' | 'audio_upload' | 'audio_mic'
-  const [activeMode, setActiveMode] = useState('audio_upload'); 
+  const [activeMode, setActiveMode] = useState('video_upload'); 
+  // 'full' (Dùng nguyên bản) | 'viral_ai' (Cắt clip viral AI 1-4 phút)
+  const [processingMode, setProcessingMode] = useState('full');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('opus_gemini_api_key') || '');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   
@@ -129,10 +131,10 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // 🚀 Chạy quy trình bóc băng AI 100% Client-Side
+  // 🚀 Chạy quy trình bóc băng AI & Phân tích Viral Clips
   const handleStartClientPipeline = async () => {
     let targetFile = null;
-    let isAudioOnly = true;
+    let isAudioOnly = false;
 
     if (activeMode === 'audio_mic') {
       if (!recordedAudioBlob) {
@@ -143,11 +145,19 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
       isAudioOnly = true;
     } else {
       if (!selectedFile) {
-        alert("Vui lòng chọn hoặc kéo thả một file Video hoặc Âm thanh.");
+        alert(`Vui lòng chọn hoặc kéo thả một file ${activeMode === 'video_upload' ? 'Video' : 'Âm thanh'}.`);
         return;
       }
       targetFile = selectedFile;
-      isAudioOnly = targetFile.type.startsWith('audio/') || !targetFile.type.startsWith('video/');
+      if (activeMode === 'audio_upload') {
+        isAudioOnly = true;
+      } else if (activeMode === 'video_upload') {
+        isAudioOnly = false;
+      } else {
+        const ext = (targetFile.name || '').toLowerCase();
+        const isVideo = ['.mp4', '.mov', '.webm', '.mkv', '.m4v', '.avi', '.ts'].some(e => ext.endsWith(e)) || targetFile.type.startsWith('video/');
+        isAudioOnly = !isVideo;
+      }
     }
 
     if (!apiKey || !apiKey.trim()) {
@@ -163,7 +173,7 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
     try {
       // 1. Tách và hạ mẫu âm thanh 16kHz trong trình duyệt
       const audioResult = await extractAudioFromMedia(targetFile, (pct, msg) => {
-        setProgressPct(Math.round(pct * 0.4)); // 0 - 40%
+        setProgressPct(Math.round(pct * 0.35)); // 0 - 35%
         setProgressMsg(msg);
       });
 
@@ -174,15 +184,15 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
         apiKey.trim(),
         selectedModel,
         (pct, msg) => {
-          setProgressPct(40 + Math.round(pct * 0.45)); // 40 - 85%
+          setProgressPct(35 + Math.round(pct * 0.45)); // 35 - 80%
           setProgressMsg(msg);
         }
       );
 
-      setProgressPct(90);
-      setProgressMsg('Đang tạo cấu trúc phân cảnh & tối ưu viral clips...');
+      setProgressPct(85);
+      setProgressMsg(processingMode === 'viral_ai' ? 'Đang phân tích 3 trụ cột (Hook - Problem - Solution) bằng AI...' : 'Đang phân tích kịch bản & tạo Tiêu Đề Hook bám sát nội dung...');
 
-      // 3. Phân tích kịch bản và phân cảnh
+      // 3. Phân tích kịch bản, tạo Tiêu Đề Hook và chia phân cảnh
       const blobUrl = URL.createObjectURL(targetFile);
       const cleanTitle = targetFile.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
 
@@ -194,21 +204,23 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
         media_type: isAudioOnly ? 'audio' : 'video',
         blob_url: blobUrl,
         video_path: blobUrl,
-        file: targetFile
+        file: targetFile,
+        processing_mode: processingMode
       };
 
-      const viralClips = analyzeViralClipsClient(transcript, videoMeta);
+      const viralClips = await analyzeViralClipsClient(transcript, videoMeta, apiKey.trim(), selectedModel, processingMode);
 
       const pipelineData = {
         has_data: true,
         video_metadata: videoMeta,
         transcript: transcript,
         viral_clips: viralClips,
+        processing_mode: processingMode,
         editor_state: null
       };
 
       setProgressPct(100);
-      setProgressMsg('Bóc băng hoàn tất! Đang chuyển vào Studio...');
+      setProgressMsg('Phân tích hoàn tất! Đang chuyển vào Studio...');
 
       setTimeout(() => {
         if (onProcessSuccess) {
@@ -430,6 +442,65 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
               )}
             </div>
           )}
+
+          {/* 3. Bảng Chọn 2 Phương Thức Xử Lý (Full vs AI Viral Clips) */}
+          <div className="space-y-2 pt-2 border-t border-[#23273a]">
+            <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Chọn Phương Thức Xử Lý:</span>
+              </span>
+              <span className="text-[10px] font-mono text-indigo-400">
+                {processingMode === 'full' ? 'Dùng Nguyên Bản' : 'Cắt AI 3 Trụ Cột (1-4p)'}
+              </span>
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option 1: Dùng nguyên bản */}
+              <div 
+                onClick={() => setProcessingMode('full')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col gap-1.5 ${
+                  processingMode === 'full'
+                    ? 'bg-indigo-950/60 border-indigo-400 text-white ring-1 ring-indigo-400 shadow-lg shadow-indigo-950/50'
+                    : 'bg-[#0d0e17] border-[#222538] text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    processingMode === 'full' ? 'border-indigo-400' : 'border-slate-500'
+                  }`}>
+                    {processingMode === 'full' && <span className="w-2 h-2 rounded-full bg-indigo-400" />}
+                  </span>
+                  <span className="font-bold text-xs text-white">🎞️ Dùng Nguyên Video / Ghi Âm</span>
+                </div>
+                <p className="text-[11px] text-slate-400 pl-6 leading-relaxed">
+                  Bóc băng 100% thời lượng, giữ trọn vẹn video từ đầu đến cuối và vào thẳng Studio Editor.
+                </p>
+              </div>
+
+              {/* Option 2: Cắt viral AI 3 trụ cột */}
+              <div 
+                onClick={() => setProcessingMode('viral_ai')}
+                className={`p-3.5 rounded-2xl border cursor-pointer transition-all flex flex-col gap-1.5 ${
+                  processingMode === 'viral_ai'
+                    ? 'bg-amber-950/60 border-amber-400 text-white ring-1 ring-amber-400 shadow-lg shadow-amber-950/50'
+                    : 'bg-[#0d0e17] border-[#222538] text-slate-400 hover:border-slate-500 hover:text-slate-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                    processingMode === 'viral_ai' ? 'border-amber-400' : 'border-slate-500'
+                  }`}>
+                    {processingMode === 'viral_ai' && <span className="w-2 h-2 rounded-full bg-amber-400" />}
+                  </span>
+                  <span className="font-bold text-xs text-white">🤖 Cắt Clip Viral Bằng AI (1 - 4 Phút)</span>
+                </div>
+                <p className="text-[11px] text-slate-400 pl-6 leading-relaxed">
+                  AI quét 3 trụ cột (Hook 5-15s → Problem 40-150s → Solution 20-60s) kèm chấm điểm Virality Score.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Progress or Error Display */}
           {isProcessing && (
