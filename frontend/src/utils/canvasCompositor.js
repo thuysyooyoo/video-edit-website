@@ -1129,53 +1129,46 @@ export function drawAnimatedStickers(ctx, animatedStickers = [], currentTime = 0
  * 🔥 Đồng bộ 100% độ mượt mà và cảm giác điện ảnh như trên bản Preview!
  */
 export function drawTransitionOverlay(ctx, effect = 'none', targetWidth = 1080, targetHeight = 1920, progress = 0) {
-  if (!effect || effect === 'none' || progress <= 0 || progress > 1) return;
+  if (!effect || effect === 'none' || progress <= 0) return;
 
   ctx.save();
   const clampedProg = Math.max(0, Math.min(1, progress));
 
   if (effect === 'blur') {
-    // 🌫️ Hiệu ứng Blur Dissolve quang học mờ nhòe điện ảnh
-    ctx.fillStyle = `rgba(15, 23, 42, ${clampedProg * 0.45})`;
-    ctx.fillRect(0, 0, targetWidth, targetHeight);
-
-    const grad = ctx.createRadialGradient(targetWidth / 2, targetHeight / 2, 80, targetWidth / 2, targetHeight / 2, targetWidth * 0.75);
-    grad.addColorStop(0, `rgba(255, 255, 255, ${clampedProg * 0.25})`);
-    grad.addColorStop(0.5, `rgba(99, 102, 241, ${clampedProg * 0.2})`);
-    grad.addColorStop(1, `rgba(10, 12, 20, ${clampedProg * 0.6})`);
-    ctx.fillStyle = grad;
+    // 🌫️ Hiệu ứng Blur Overlay: Lớp phủ mờ nhẹ 10% đen giống hệt bg-black/10 trong Preview
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
     ctx.fillRect(0, 0, targetWidth, targetHeight);
 
   } else if (effect === 'fade_black') {
-    // 🌑 Hiệu ứng Fade Black mờ dần vào nền đen điện ảnh tinh tế
-    ctx.fillStyle = `rgba(0, 0, 0, ${clampedProg * 0.98})`;
+    // 🖤 Hiệu ứng Fade Black: Màn hình đen 100% giống hệt bg-black trong Preview
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, targetWidth, targetHeight);
 
   } else if (effect === 'flash_white') {
-    // ⚡ Hiệu ứng Flash White chớp sáng rực rỡ
-    const flashAlpha = Math.pow(clampedProg, 1.4) * 0.98;
+    // ⚡ Hiệu ứng Flash White: Chớp sáng rực rỡ trắng rồi tan dần
+    const flashAlpha = Math.pow(clampedProg, 1.2) * 0.95;
     ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
     ctx.fillRect(0, 0, targetWidth, targetHeight);
 
   } else if (effect === 'zoom_in') {
-    // 🔍 Hiệu ứng Zoom In Punch vòng sóng phóng to tạo điểm nhấn
-    const r = Math.max(60, targetWidth * 0.5 * (1.1 - clampedProg * 0.6) * 1.5);
+    // 🔍 Hiệu ứng Zoom In: Vòng sóng viền neon 9:16 phóng to tạo điểm nhấn
+    const r = Math.max(80, targetWidth * 0.5 * (1.15 - clampedProg * 0.6) * 1.4);
     ctx.strokeStyle = `rgba(129, 140, 248, ${clampedProg * 0.85})`;
-    ctx.lineWidth = Math.max(4, 24 * clampedProg);
+    ctx.lineWidth = Math.max(6, 28 * clampedProg);
     ctx.shadowColor = 'rgba(99, 102, 241, 0.9)';
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 32;
     ctx.beginPath();
     ctx.arc(targetWidth / 2, targetHeight / 2, r, 0, Math.PI * 2);
     ctx.stroke();
 
   } else if (effect === 'glitch') {
-    // 👾 Hiệu ứng Glitch Cyber nhiễu sóng kỹ thuật số
-    ctx.fillStyle = `rgba(99, 102, 241, ${clampedProg * 0.4})`;
+    // 👾 Hiệu ứng Glitch Cyber: Sóng nhiễu màu tím xanh
+    ctx.fillStyle = `rgba(99, 102, 241, ${clampedProg * 0.35})`;
     ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-    ctx.fillStyle = `rgba(236, 72, 153, ${clampedProg * 0.35})`;
     const sliceY = (Math.sin(clampedProg * 18) * 0.5 + 0.5) * targetHeight;
-    ctx.fillRect(0, sliceY - 40, targetWidth, 80);
+    ctx.fillStyle = `rgba(236, 72, 153, ${clampedProg * 0.3})`;
+    ctx.fillRect(0, sliceY - 50, targetWidth, 100);
 
   } else if (effect === 'circle_wipe') {
     // ⭕ Hiệu ứng Circle Wipe quét mở rộng vòng tròn
@@ -1185,6 +1178,12 @@ export function drawTransitionOverlay(ctx, effect = 'none', targetWidth = 1080, 
     ctx.rect(0, 0, targetWidth, targetHeight);
     ctx.arc(targetWidth / 2, targetHeight / 2, wipeRadius, 0, Math.PI * 2, true);
     ctx.fill();
+
+  } else if (effect === 'flat_slide') {
+    // ⬅️ Hiệu ứng Trượt màn che đen
+    const slideW = (1 - clampedProg) * targetWidth;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, slideW, targetHeight);
   }
 
   ctx.restore();
