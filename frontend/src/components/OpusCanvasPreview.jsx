@@ -771,7 +771,7 @@ export default function OpusCanvasPreview({
 
           return (
             <div 
-              style={{ zIndex: getLayerZIndex('layer_transitions', 20) }}
+              style={{ zIndex: getLayerZIndex('layer_transitions', 28) }}
               className="absolute inset-0 pointer-events-none flex items-center justify-center"
             >
               {/* 🌫️ Hiệu ứng Blur duy trì xuyên suốt phân cảnh được chọn */}
@@ -1311,7 +1311,7 @@ export default function OpusCanvasPreview({
               transform: `translate(-50%, -50%) scale(${(captionConfig?.scale ?? 100) / 100})`,
               width: `${captionConfig?.boxWidth ?? 300}px`,
               maxWidth: '96%',
-              zIndex: getLayerZIndex('layer_captions', 35)
+              zIndex: getLayerZIndex('layer_captions', 22)
             }}
             onMouseDown={(e) => startDragging(e, 'caption', null, captionConfig?.pos || captionPos || { x: 50, y: 84 })}
             onClick={(e) => {
@@ -1319,7 +1319,7 @@ export default function OpusCanvasPreview({
               setSelectedElement({ type: 'caption', id: null });
             }}
             title="Kéo di chuyển, kéo các cạnh để chỉnh độ rộng/cao của khung, kéo góc để zoom"
-            className="absolute z-35 cursor-move group select-none text-center"
+            className="absolute cursor-move group select-none text-center"
           >
             {/* Quick Action Toolbar */}
             {selectedElement?.type === 'caption' && renderElementToolbar(

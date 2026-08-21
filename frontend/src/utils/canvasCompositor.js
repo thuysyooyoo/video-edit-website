@@ -1295,12 +1295,12 @@ export function renderCompositedFrame(ctx, options = {}) {
     });
   } else {
     // Thứ tự mặc định an toàn:
-    // Base Video ➔ B-Roll ➔ Transitions ➔ Captions ➔ Title ➔ Logo ➔ Text ➔ Stickers
+    // Base Video ➔ B-Roll ➔ Captions ➔ Transitions ➔ Title ➔ Logo ➔ Text ➔ Stickers
     executionOrder = [
       'layer_base_video',
       'layer_broll',
-      'layer_transitions',
       'layer_captions',
+      'layer_transitions',
       'layer_title',
       'layer_logo',
       ...(textLayers || []).map((tl, i) => (tl && tl.id) ? tl.id : `tl_${i}`),

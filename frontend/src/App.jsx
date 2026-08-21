@@ -148,12 +148,12 @@ export default function App() {
   const [selectedAnimatedStickerId, setSelectedAnimatedStickerId] = useState(null);
   const [isLayersDrawerOpen, setIsLayersDrawerOpen] = useState(false);
 
-  // 🥞 Unified Multi-Type Layer Stacking Order State
+  // 🥞 Unified Multi-Type Layer Stacking Order State (Caption nằm dưới Transitions)
   const [layerOrder, setLayerOrder] = useState([
     'layer_base_video',
     'layer_broll',
-    'layer_transitions',
     'layer_captions',
+    'layer_transitions',
     'layer_title',
     'layer_logo'
   ]);
@@ -164,8 +164,8 @@ export default function App() {
       let currentList = Array.isArray(prev) && prev.length > 0 ? [...prev] : [
         'layer_base_video',
         'layer_broll',
-        'layer_transitions',
         'layer_captions',
+        'layer_transitions',
         'layer_title',
         'layer_logo'
       ];
