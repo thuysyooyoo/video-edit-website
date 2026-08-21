@@ -756,6 +756,137 @@ export default function OpusCanvasPreview({
           </div>
         )}
 
+        {/* ═════════════════════════════════════════════════════════════════════════════════
+            2.3. SUBTITLE / DYNAMIC CAPTIONS (HIỂN THỊ DƯỚI LỚP TRANSITIONS / BLUR)
+           ═════════════════════════════════════════════════════════════════════════════════ */}
+        {captionPreset !== 'No captions' && captionConfig?.visible !== false && activePhrase.length > 0 && (
+          <div 
+            style={{
+              top: `${captionConfig?.pos?.y ?? captionPos?.y ?? 84}%`,
+              left: `${captionConfig?.pos?.x ?? captionPos?.x ?? 50}%`,
+              transform: `translate(-50%, -50%) scale(${(captionConfig?.scale ?? 100) / 100})`,
+              width: `${captionConfig?.boxWidth ?? 300}px`,
+              maxWidth: '96%',
+              zIndex: getLayerZIndex('layer_captions', 18)
+            }}
+            onMouseDown={(e) => startDragging(e, 'caption', null, captionConfig?.pos || captionPos || { x: 50, y: 84 })}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedElement({ type: 'caption', id: null });
+            }}
+            title="Kéo di chuyển, kéo các cạnh để chỉnh độ rộng/cao của khung, kéo góc để zoom"
+            className="absolute cursor-move group select-none text-center"
+          >
+            {/* Quick Action Toolbar */}
+            {selectedElement?.type === 'caption' && renderElementToolbar(
+              'caption',
+              null,
+              () => {
+                if (setFontStyle) setFontStyle(prev => ({ ...prev, fontSize: Math.min(80, (prev.fontSize || 40) + 4) }));
+                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, scale: Math.min(250, (prev.scale || 100) + 15) }));
+              },
+              () => {
+                if (setFontStyle) setFontStyle(prev => ({ ...prev, fontSize: Math.max(18, (prev.fontSize || 40) - 4) }));
+                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, scale: Math.max(40, (prev.scale || 100) - 15) }));
+              },
+              () => onUpdateCaptionConfig && onUpdateCaptionConfig(prev => ({ ...prev, boxWidth: Math.min(340, (prev.boxWidth || 300) + 25) })),
+              () => onUpdateCaptionConfig && onUpdateCaptionConfig(prev => ({ ...prev, paddingY: Math.min(32, (prev.paddingY || 6) + 4) })),
+              () => {
+                const phraseText = activePhrase.map(w => w.word).join(' ');
+                setEditingPhraseModal({ words: activePhrase, text: phraseText });
+              },
+              () => {
+                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, visible: false }));
+                if (setCaptionPreset) setCaptionPreset('No captions');
+              },
+              'Phụ Đề'
+            )}
+
+            <div 
+              style={{
+                paddingTop: `${captionConfig?.paddingY ?? 6}px`,
+                paddingBottom: `${captionConfig?.paddingY ?? 6}px`
+              }}
+              className="inline-block relative w-full p-1.5 rounded-xl group-hover:ring-1 group-hover:ring-brand-400/60 group-hover:bg-black/30 transition-all"
+            >
+              <p 
+                style={{
+                  fontFamily: fontFamily,
+                  fontSize: `${fontSize * 0.42}px`,
+                  color: textColor,
+                  fontWeight: fontWeight,
+                  fontStyle: isItalic ? 'italic' : 'normal',
+                  textDecoration: isUnderline ? 'underline' : 'none',
+                  textTransform: isUppercase ? 'uppercase' : 'none',
+                  WebkitTextStroke: `${strokeWidth * 0.25}px ${strokeColor}`,
+                  textShadow: hasShadow ? `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowColor}` : 'none'
+                }}
+                className="leading-tight tracking-wider transition-all break-words"
+              >
+                {activePhrase.map((w, idx) => {
+                  const isCurrent = currentTime >= (w.start - 0.05) && currentTime <= (w.end + 0.05);
+                  const wordEmoji = (aiEmoji === true || fontStyle?.aiEmoji === true) && isCurrent ? (w.emoji || getEmojiForWord(w.word)) : null;
+                  const currentEffect = fontStyle?.effect || captionEffect || 'pop';
+                  
+                  let displayWord = (w.word || '').trim().replace(/^["']+|["']+$/g, '');
+                  if (autoCensor && ['rủi', 'chết', 'nguy'].includes(displayWord.toLowerCase())) {
+                    displayWord = '***';
+                  }
+
+                  if (isCurrent && currentEffect === 'pill') {
+                    return (
+                      <span key={idx} className="relative inline-block mx-1">
+                        {wordEmoji && (
+                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-lg drop-shadow-md animate-bounce">
+                            {wordEmoji}
+                          </span>
+                        )}
+                        <span 
+                          style={{
+                            backgroundColor: fontStyle?.pillBgColor || '#facc15',
+                            color: fontStyle?.pillTextColor || '#000000',
+                            WebkitTextStroke: '0px transparent',
+                            textShadow: 'none'
+                          }}
+                          className="px-2.5 py-0.5 rounded-lg font-black inline-block shadow-lg scale-105"
+                        >
+                          {displayWord}
+                        </span>
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <span key={idx} className="relative inline-block mx-1">
+                      {isCurrent && wordEmoji && (
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-lg drop-shadow-md animate-bounce">
+                          {wordEmoji}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          color: isCurrent && hasHighlight ? highlightColor : textColor
+                        }}
+                        className={`inline-block transition-all ${
+                          isCurrent ? 'scale-115 drop-shadow-[0_0_12px_rgba(255,255,255,0.9)] font-black' : ''
+                        } ${
+                          currentEffect === 'pop' && isCurrent ? 'animate-bounce' :
+                          currentEffect === 'glow' && isCurrent ? 'drop-shadow-[0_0_20px_rgba(34,197,94,1)]' : ''
+                        }`}
+                      >
+                        {displayWord}
+                      </span>
+                    </span>
+                  );
+                })}
+              </p>
+
+              {/* 8-Directional Transform Handles */}
+              {renderTransformBox('caption', null, captionConfig)}
+            </div>
+          </div>
+        )}
+
         {/* ── TRANSITION OVERLAYS (BLUR/FADE BLACK XUYÊN SUỐT PHÂN CẢNH ĐƯỢC CHỈ ĐỊNH) ── */}
         {(() => {
           const currentScene = (clip?.scenes || []).find(s => {
@@ -1299,137 +1430,6 @@ export default function OpusCanvasPreview({
           </div>
           );
         })()}
-
-        {/* ═════════════════════════════════════════════════════════════════════════════════
-            4. SUBTITLE / DYNAMIC CAPTIONS (KÉO RỘNG KHUNG, KÉO CAO, ZOOM GÓC, SỬA & XÓA)
-           ═════════════════════════════════════════════════════════════════════════════════ */}
-        {captionPreset !== 'No captions' && captionConfig?.visible !== false && activePhrase.length > 0 && (
-          <div 
-            style={{
-              top: `${captionConfig?.pos?.y ?? captionPos?.y ?? 84}%`,
-              left: `${captionConfig?.pos?.x ?? captionPos?.x ?? 50}%`,
-              transform: `translate(-50%, -50%) scale(${(captionConfig?.scale ?? 100) / 100})`,
-              width: `${captionConfig?.boxWidth ?? 300}px`,
-              maxWidth: '96%',
-              zIndex: getLayerZIndex('layer_captions', 22)
-            }}
-            onMouseDown={(e) => startDragging(e, 'caption', null, captionConfig?.pos || captionPos || { x: 50, y: 84 })}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedElement({ type: 'caption', id: null });
-            }}
-            title="Kéo di chuyển, kéo các cạnh để chỉnh độ rộng/cao của khung, kéo góc để zoom"
-            className="absolute cursor-move group select-none text-center"
-          >
-            {/* Quick Action Toolbar */}
-            {selectedElement?.type === 'caption' && renderElementToolbar(
-              'caption',
-              null,
-              () => {
-                if (setFontStyle) setFontStyle(prev => ({ ...prev, fontSize: Math.min(80, (prev.fontSize || 40) + 4) }));
-                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, scale: Math.min(250, (prev.scale || 100) + 15) }));
-              },
-              () => {
-                if (setFontStyle) setFontStyle(prev => ({ ...prev, fontSize: Math.max(18, (prev.fontSize || 40) - 4) }));
-                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, scale: Math.max(40, (prev.scale || 100) - 15) }));
-              },
-              () => onUpdateCaptionConfig && onUpdateCaptionConfig(prev => ({ ...prev, boxWidth: Math.min(340, (prev.boxWidth || 300) + 25) })),
-              () => onUpdateCaptionConfig && onUpdateCaptionConfig(prev => ({ ...prev, paddingY: Math.min(32, (prev.paddingY || 6) + 4) })),
-              () => {
-                const phraseText = activePhrase.map(w => w.word).join(' ');
-                setEditingPhraseModal({ words: activePhrase, text: phraseText });
-              },
-              () => {
-                if (onUpdateCaptionConfig) onUpdateCaptionConfig(prev => ({ ...prev, visible: false }));
-                if (setCaptionPreset) setCaptionPreset('No captions');
-              },
-              'Phụ Đề'
-            )}
-
-            <div 
-              style={{
-                paddingTop: `${captionConfig?.paddingY ?? 6}px`,
-                paddingBottom: `${captionConfig?.paddingY ?? 6}px`
-              }}
-              className="inline-block relative w-full p-1.5 rounded-xl group-hover:ring-1 group-hover:ring-brand-400/60 group-hover:bg-black/30 transition-all"
-            >
-              <p 
-                style={{
-                  fontFamily: fontFamily,
-                  fontSize: `${fontSize * 0.42}px`,
-                  color: textColor,
-                  fontWeight: fontWeight,
-                  fontStyle: isItalic ? 'italic' : 'normal',
-                  textDecoration: isUnderline ? 'underline' : 'none',
-                  textTransform: isUppercase ? 'uppercase' : 'none',
-                  WebkitTextStroke: `${strokeWidth * 0.25}px ${strokeColor}`,
-                  textShadow: hasShadow ? `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowColor}` : 'none'
-                }}
-                className="leading-tight tracking-wider transition-all break-words"
-              >
-                {activePhrase.map((w, idx) => {
-                  const isCurrent = currentTime >= (w.start - 0.05) && currentTime <= (w.end + 0.05);
-                  const wordEmoji = (aiEmoji === true || fontStyle?.aiEmoji === true) && isCurrent ? (w.emoji || getEmojiForWord(w.word)) : null;
-                  const currentEffect = fontStyle?.effect || captionEffect || 'pop';
-                  
-                  let displayWord = (w.word || '').trim().replace(/^["']+|["']+$/g, '');
-                  if (autoCensor && ['rủi', 'chết', 'nguy'].includes(displayWord.toLowerCase())) {
-                    displayWord = '***';
-                  }
-
-                  if (isCurrent && currentEffect === 'pill') {
-                    return (
-                      <span key={idx} className="relative inline-block mx-1">
-                        {wordEmoji && (
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-lg drop-shadow-md animate-bounce">
-                            {wordEmoji}
-                          </span>
-                        )}
-                        <span 
-                          style={{
-                            backgroundColor: fontStyle?.pillBgColor || '#facc15',
-                            color: fontStyle?.pillTextColor || '#000000',
-                            WebkitTextStroke: '0px transparent',
-                            textShadow: 'none'
-                          }}
-                          className="px-2.5 py-0.5 rounded-lg font-black inline-block shadow-lg scale-105"
-                        >
-                          {displayWord}
-                        </span>
-                      </span>
-                    );
-                  }
-
-                  return (
-                    <span key={idx} className="relative inline-block mx-1">
-                      {isCurrent && wordEmoji && (
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-lg drop-shadow-md animate-bounce">
-                          {wordEmoji}
-                        </span>
-                      )}
-                      <span
-                        style={{
-                          color: isCurrent && hasHighlight ? highlightColor : textColor
-                        }}
-                        className={`inline-block transition-all ${
-                          isCurrent ? 'scale-115 drop-shadow-[0_0_12px_rgba(255,255,255,0.9)] font-black' : ''
-                        } ${
-                          currentEffect === 'pop' && isCurrent ? 'animate-bounce' :
-                          currentEffect === 'glow' && isCurrent ? 'drop-shadow-[0_0_20px_rgba(34,197,94,1)]' : ''
-                        }`}
-                      >
-                        {displayWord}
-                      </span>
-                    </span>
-                  );
-                })}
-              </p>
-
-              {/* 8-Directional Transform Handles */}
-              {renderTransformBox('caption', null, captionConfig)}
-            </div>
-          </div>
-        )}
 
         {/* Play icon overlay when paused */}
         {!isPlaying && !isPlacingTextMode && !isExporting && (
