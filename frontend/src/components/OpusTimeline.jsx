@@ -896,33 +896,31 @@ export default function OpusTimeline({
                       )}
                     </div>
 
-                    {/* Transition Badge between Scene [idx] and Scene [idx + 1] -> Click to open Sidebar Transitions */}
-                    {idx < scenes.length - 1 && (
-                      <div
-                        style={{ left: `${leftPct + widthPct}%` }}
-                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 pointer-events-auto"
+                    {/* Transition Badge ở ĐẦU mỗi phân cảnh -> Click mở Sidebar Transitions cho phân cảnh này */}
+                    <div
+                      style={{ left: `${leftPct}%` }}
+                      className="absolute top-1/2 -translate-y-1/2 translate-x-[2px] z-30 pointer-events-auto"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenTransitionsTab) {
+                            onOpenTransitionsTab(scene.id);
+                          }
+                        }}
+                        className={`transition-badge-btn px-2 py-0.8 rounded-md border flex items-center gap-1 shadow-lg text-[9px] font-bold transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+                          scene.transition && scene.transition !== 'none'
+                            ? 'bg-amber-500 text-black border-amber-300 ring-2 ring-amber-400/60'
+                            : 'bg-[#181b29] hover:bg-amber-600 hover:text-white text-amber-300 border-[#3d4464]'
+                        }`}
+                        title="Mở thanh Transitions bên phải để chọn hiệu ứng chuyển cảnh cho phân cảnh này"
                       >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onOpenTransitionsTab) {
-                              onOpenTransitionsTab(scene.id);
-                            }
-                          }}
-                          className={`transition-badge-btn px-2 py-0.8 rounded-md border flex items-center gap-1 shadow-lg text-[9px] font-bold transition-all hover:scale-110 active:scale-95 cursor-pointer ${
-                            scene.transition && scene.transition !== 'none'
-                              ? 'bg-amber-500 text-black border-amber-300 ring-2 ring-amber-400/60'
-                              : 'bg-[#181b29] hover:bg-amber-600 hover:text-white text-amber-300 border-[#3d4464]'
-                          }`}
-                          title="Mở thanh Transitions bên phải để chọn hiệu ứng chuyển cảnh rộng rãi"
-                        >
-                          <Zap className="w-3 h-3 fill-current text-current" />
-                          <span className="uppercase">
-                            {getTransitionLabel(scene.transition)}
-                          </span>
-                        </button>
-                      </div>
-                    )}
+                        <Zap className="w-3 h-3 fill-current text-current" />
+                        <span className="uppercase">
+                          {getTransitionLabel(scene.transition)}
+                        </span>
+                      </button>
+                    </div>
                   </React.Fragment>
                 );
               })}

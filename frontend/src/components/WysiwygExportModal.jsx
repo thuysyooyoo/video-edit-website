@@ -444,20 +444,20 @@ export default function WysiwygExportModal({
 
         if (activeScene?.transition && activeScene.transition !== 'none') {
           if (activeScene.transition === 'blur') {
-            // 🌫️ Mờ xuyên suốt 100% thời gian của phân cảnh này (từ start_time đến end_time)
+            // 🌫️ Mờ xuyên suốt 100% thời gian phân cảnh
             activeTransitionEffect = 'blur';
             transitionProgress = 1.0;
           } else if (activeScene.transition === 'fade_black') {
-            // 🖤 Tối đen xuyên suốt 100% thời gian của phân cảnh này (từ start_time đến end_time)
+            // 🖤 Tối đen xuyên suốt 100% thời gian phân cảnh
             activeTransitionEffect = 'fade_black';
             transitionProgress = 1.0;
           } else {
-            // Các hiệu ứng chớp sáng, zoom, glitch ở đầu phân cảnh (0.45s)
+            // Các hiệu ứng khác: 0.4s ở đầu phân cảnh (tính từ start_time)
             const sStart = (activeScene.start_time >= clipStart && clipStart > 0) ? activeScene.start_time : (clipStart + (activeScene.start_time || 0));
             const elapsedInScene = currT - sStart;
-            if (elapsedInScene >= 0 && elapsedInScene <= 0.45) {
+            if (elapsedInScene >= 0 && elapsedInScene <= 0.4) {
               activeTransitionEffect = activeScene.transition;
-              transitionProgress = 1 - (elapsedInScene / 0.45);
+              transitionProgress = 1 - (elapsedInScene / 0.4);
             }
           }
         }
@@ -465,9 +465,9 @@ export default function WysiwygExportModal({
         // 2. Chỉ kiểm tra chuyển cảnh chung nếu toàn bộ video chưa hề bị cắt split scenes
         if (activeTransitionEffect === 'none' && (!clip?.scenes || clip.scenes.length <= 1) && activeTransition && activeTransition !== 'none') {
           const relT = currT - clipStart;
-          if (relT >= 0 && relT <= 0.45) {
+          if (relT >= 0 && relT <= 0.4) {
             activeTransitionEffect = activeTransition;
-            transitionProgress = 1 - (relT / 0.45);
+            transitionProgress = 1 - (relT / 0.4);
           }
         }
 

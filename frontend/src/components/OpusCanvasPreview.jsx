@@ -259,22 +259,24 @@ export default function OpusCanvasPreview({
   useEffect(() => {
     setCurrentTransitionEffect(activeTransition);
     setTransitionTriggered(true);
-    const timer = setTimeout(() => setTransitionTriggered(false), 450);
+    const timer = setTimeout(() => setTransitionTriggered(false), 400);
     return () => clearTimeout(timer);
   }, [activeTransition, clip?.id]);
 
-  // Trigger dynamic transition effects at each Split Cut point on the timeline
+  // Trigger dynamic transition effects at each scene start_time (0.4s flash at scene entry)
   useEffect(() => {
     if (!clip?.scenes || clip.scenes.length <= 1) return;
     const matchScene = clip.scenes.find(
-      s => s.transition && s.transition !== 'none' && Math.abs(s.end_time - currentTime) <= 0.35
+      s => s.transition && s.transition !== 'none'
+        && s.transition !== 'blur' && s.transition !== 'fade_black'
+        && Math.abs(s.start_time - currentTime) <= 0.35
     );
 
     if (matchScene && lastTriggeredSceneTransitionRef.current !== matchScene.id) {
       lastTriggeredSceneTransitionRef.current = matchScene.id;
       setCurrentTransitionEffect(matchScene.transition);
       setTransitionTriggered(true);
-      const timer = setTimeout(() => setTransitionTriggered(false), 500);
+      const timer = setTimeout(() => setTransitionTriggered(false), 400);
       return () => clearTimeout(timer);
     } else if (!matchScene) {
       lastTriggeredSceneTransitionRef.current = null;

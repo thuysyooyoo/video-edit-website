@@ -1534,45 +1534,17 @@ export default function OpusRightSidebar({
               )}
             </div>
 
-            {/* 1. Điểm Cắt Selector */}
-            {clip?.scenes && clip.scenes.length > 1 ? (
-              <div className="p-3 bg-[#171926] border border-[#272b40] rounded-2xl space-y-2.5">
-                <div className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
-                  <span>Chọn Điểm Cắt Cần Đổi Hiệu Ứng:</span>
-                  <span className="text-[10px] text-amber-400 font-mono">
-                    {(() => {
-                      const cur = clip.scenes.find(s => s.id === selectedTransitionSceneId) || clip.scenes[0];
-                      return cur ? `${cur.title} ➔` : 'Tất cả';
-                    })()}
-                  </span>
+            {/* Hiển thị phân cảnh đang được chọn */}
+            {clip?.scenes && clip.scenes.length > 1 && selectedTransitionSceneId ? (
+              <div className="p-3 bg-[#171926] border border-amber-500/50 rounded-2xl">
+                <div className="text-[11px] font-bold text-amber-300 flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Đang chỉnh hiệu ứng cho: <span className="text-white">{clip.scenes.find(s => s.id === selectedTransitionSceneId)?.title || 'Phân cảnh'}</span></span>
                 </div>
-
-                <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto">
-                  {clip.scenes.slice(0, -1).map((sc, idx) => {
-                    const isTarget = selectedTransitionSceneId === sc.id || (!selectedTransitionSceneId && idx === 0);
-                    return (
-                      <div
-                        key={sc.id}
-                        onClick={() => setSelectedTransitionSceneId && setSelectedTransitionSceneId(sc.id)}
-                        className={`p-2 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                          isTarget
-                            ? 'bg-amber-950/40 border-amber-500 text-white ring-1 ring-amber-500 shadow-md'
-                            : 'bg-[#12131e] border-[#222638] text-slate-300 hover:border-slate-500'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="w-5 h-5 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[10px]">
-                            {idx + 1}
-                          </span>
-                          <span className="font-bold text-white text-xs truncate">{sc.title}</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-amber-400 font-bold">
-                          {sc.transition || 'none'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+              </div>
+            ) : clip?.scenes && clip.scenes.length > 1 ? (
+              <div className="p-3 bg-[#171926] border border-[#272b40] rounded-2xl text-[11px] text-slate-400">
+                <span>Bấm vào badge <strong className="text-amber-400">⚡</strong> trên Timeline để chọn phân cảnh cần đổi hiệu ứng.</span>
               </div>
             ) : (
               <div className="p-3 bg-[#171926] border border-[#272b40] rounded-2xl text-[11px] text-slate-400 space-y-1.5">
