@@ -6,10 +6,10 @@
 
 const PROMPT_VIRAL_3_PILLARS = `
 Bạn là chuyên gia biên tập video viral hàng đầu trên TikTok, YouTube Shorts, Reels (Chuẩn phong cách MrBeast, Alex Hormozi, SupoClip).
-Nhiệm vụ: Phân tích transcript lời thoại và trích xuất các đoạn trích (Clips) đạt tiềm năng Triệu View theo CẤU TRÚC 3 TRỤ CỘT BẮT BUỘC:
+Nhiệm vụ: Phân tích toàn bộ transcript lời thoại và trích xuất TẤT CẢ các đoạn trích tiềm năng Triệu View (trích xuất từ 3 đến 6 Clips phân bổ đều từ đầu đến cuối video dài) theo CẤU TRÚC 3 TRỤ CỘT BẮT BUỘC:
 
 ═══════════════════════════════════════════════════════════════
-CẤU TRÚC 3 TRỤ CỘT CỦA CLIP VIRAL:
+CẤU TRÚC 3 TRỤ CỘT CỦA MỖI CLIP VIRAL:
 ═══════════════════════════════════════════════════════════════
 1. PHẦN 1: HOOK (Mở đầu cuốn hút 5 - 15 giây đầu):
    - Câu mở đầu gây sốc, giật tít, khơi gợi tò mò, nêu vấn đề nóng khiến người xem dừng lại.
@@ -23,7 +23,8 @@ CẤU TRÚC 3 TRỤ CỘT CỦA CLIP VIRAL:
    - Đưa ra giải pháp dứt khoát, mẹo thực tế, bài học đắt giá hoặc kết luận đọng lại.
    - Nêu rõ Solution và chấm value_score (50 - 100).
 
-QUY TẮC THỜI LƯỢNG:
+QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS:
+- Hãy trích xuất từ 3 đến 6 Clips hay nhất trên toàn bộ chiều dài video.
 - Thời lượng mỗi clip: TỐI THIỂU 60 GIÂY (1 phút) và TỐI ĐA 240 GIÂY (4 phút). (Nếu video gốc ngắn hơn 60s, giữ toàn bộ video).
 - start_time & end_time: Cắt đúng đầu câu và cuối câu hoàn chỉnh của người nói.
 - Tiêu đề 'title': Viết hoa, giật tít cuốn hút bám sát đúng chủ đề đoạn nói, dưới 60 ký tự.
