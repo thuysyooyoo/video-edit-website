@@ -37,7 +37,7 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
   // 'full' (Dùng nguyên bản) | 'viral_ai' (Cắt clip viral AI 1-4 phút)
   const [processingMode, setProcessingMode] = useState('viral_ai');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('opus_gemini_api_key') || '');
-  const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash-lite');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   
   // Media Files State
   const [selectedFile, setSelectedFile] = useState(null);

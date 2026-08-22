@@ -4,25 +4,23 @@
  */
 
 export const DEFAULT_GEMINI_MODELS = [
-  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite (Khuyên dùng - Siêu tốc & Ổn định)', desc: 'Mô hình thế hệ mới chuẩn nhất của Google' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Miễn phí - Siêu tốc & Ổn định nhất)', desc: 'Mô hình chuẩn miễn phí của Google AI Studio' },
   { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash (Chuẩn xác cao)', desc: 'Mô hình bóc băng và xử lý video tối ưu' },
   { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (Tối tân)', desc: 'Mô hình thông minh cao cấp nhất' },
-  { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Tự động chọn bản Flash mới nhất của Google' },
-  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
+  { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Tự động chọn bản Flash mới nhất của Google' }
 ];
 
 /**
  * Gửi 1 đoạn âm thanh (chunk) lên Google Gemini API
  */
-async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel = 'gemini-3.5-flash-lite') {
+async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel = 'gemini-2.5-flash') {
   const candidateModels = [
     preferredModel,
-    'gemini-3.5-flash-lite',
+    'gemini-2.5-flash',
     'gemini-3.5-flash',
     'gemini-3.6-flash',
     'gemini-3.7-flash',
-    'gemini-flash-latest',
-    'gemini-3.1-pro-preview'
+    'gemini-flash-latest'
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   const systemInstruction = `
@@ -136,7 +134,7 @@ Nhiệm vụ của bạn:
 /**
  * ⚡ Bóc băng toàn bộ âm thanh (Tự động ghép nối các Chunks 120s nếu video dài)
  */
-export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-3.5-flash-lite', onProgress = null) {
+export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-2.5-flash', onProgress = null) {
   if (!apiKey || !apiKey.trim()) {
     throw new Error('Vui lòng cung cấp Gemini API Key để thực hiện bóc băng AI.');
   }
