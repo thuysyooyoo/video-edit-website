@@ -4,21 +4,25 @@
  */
 
 export const DEFAULT_GEMINI_MODELS = [
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Khuyên dùng - Siêu tốc & Chuẩn xác)', desc: 'Mô hình thế hệ mới chuẩn nhất của Google' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Cực kỳ ổn định)', desc: 'Mô hình bóc băng và xử lý văn bản chuẩn' },
-  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite (Siêu nhẹ)', desc: 'Mô hình tối ưu tốc độ' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite (Khuyên dùng - Siêu tốc & Ổn định)', desc: 'Mô hình thế hệ mới chuẩn nhất của Google' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash (Chuẩn xác cao)', desc: 'Mô hình bóc băng và xử lý video tối ưu' },
+  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (Tối tân)', desc: 'Mô hình thông minh cao cấp nhất' },
+  { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Tự động chọn bản Flash mới nhất của Google' },
+  { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
 ];
 
 /**
  * Gửi 1 đoạn âm thanh (chunk) lên Google Gemini API
  */
-async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel) {
+async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel = 'gemini-3.5-flash-lite') {
   const candidateModels = [
     preferredModel,
-    'gemini-2.0-flash',
-    'gemini-1.5-flash',
-    'gemini-2.0-flash-lite'
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-flash-latest',
+    'gemini-3.1-pro-preview'
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   const systemInstruction = `
@@ -132,7 +136,7 @@ Nhiệm vụ của bạn:
 /**
  * ⚡ Bóc băng toàn bộ âm thanh (Tự động ghép nối các Chunks 120s nếu video dài)
  */
-export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-2.0-flash', onProgress = null) {
+export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-3.5-flash-lite', onProgress = null) {
   if (!apiKey || !apiKey.trim()) {
     throw new Error('Vui lòng cung cấp Gemini API Key để thực hiện bóc băng AI.');
   }
