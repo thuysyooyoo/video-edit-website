@@ -177,9 +177,9 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
         setProgressMsg(msg);
       });
 
-      // 2. Bóc băng và gán timestamp từng từ với Gemini Cloud AI
+      // 2. Bóc băng và gán timestamp từng từ với Gemini Cloud AI (Hỗ trợ Audio Chunks)
       const transcript = await transcribeWithGeminiClient(
-        audioResult.base64,
+        audioResult,
         audioResult.duration,
         apiKey.trim(),
         selectedModel,

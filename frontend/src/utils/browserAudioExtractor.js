@@ -34,34 +34,55 @@ export async function extractAudioFromMedia(file, onProgress = null) {
   source.start(0);
 
   const resampledBuffer = await offlineCtx.startRendering();
-  if (onProgress) onProgress(80, 'Đang đóng gói file WAV 16kHz chuẩn...');
+  if (onProgress) onProgress(80, 'Đang tối ưu các phân đoạn âm thanh chuẩn 16kHz...');
 
-  const wavBlob = audioBufferToWavBlob(resampledBuffer);
-  const base64Data = await blobToBase64(wavBlob);
+  const totalDuration = resampledBuffer.duration;
+  // Giới hạn mỗi chunk tối đa 120 giây (2 phút) để dung lượng payload base64 chỉ ~3.8MB, không bao giờ vượt 20MB của Gemini API
+  const chunkDuration = 120;
+  const numChunks = Math.max(1, Math.ceil(totalDuration / chunkDuration));
+  const chunks = [];
 
-  if (onProgress) onProgress(100, 'Đã trích xuất âm thanh thành công!');
+  const fullChannelData = resampledBuffer.getChannelData(0);
+
+  for (let i = 0; i < numChunks; i++) {
+    const startSec = i * chunkDuration;
+    const endSec = Math.min(totalDuration, (i + 1) * chunkDuration);
+    const startSample = Math.floor(startSec * targetSampleRate);
+    const endSample = Math.min(fullChannelData.length, Math.floor(endSec * targetSampleRate));
+    
+    const chunkSamples = fullChannelData.subarray(startSample, endSample);
+    const wavBlob = samplesToWavBlob(chunkSamples, targetSampleRate);
+    const base64Data = await blobToBase64(wavBlob);
+
+    chunks.push({
+      index: i,
+      startSec,
+      endSec,
+      duration: endSec - startSec,
+      blob: wavBlob,
+      base64: base64Data
+    });
+  }
+
+  if (onProgress) onProgress(100, 'Đã trích xuất và tối ưu âm thanh thành công!');
 
   return {
-    blob: wavBlob,
-    base64: base64Data,
-    duration: audioBuffer.duration,
+    duration: totalDuration,
+    chunks: chunks,
+    base64: chunks[0]?.base64 || '',
     sampleRate: targetSampleRate,
     channels: 1
   };
 }
 
 /**
- * Chuyển đổi AudioBuffer thành định dạng chuẩn WAV 16-bit PCM
+ * Chuyển Float32Array PCM thành định dạng chuẩn WAV 16-bit PCM
  */
-function audioBufferToWavBlob(audioBuffer) {
-  const numOfChan = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
-  const format = 1; // PCM
+function samplesToWavBlob(samples, sampleRate = 16000) {
+  const numOfChan = 1;
   const bitDepth = 16;
   const bytesPerSample = bitDepth / 8;
   const blockAlign = numOfChan * bytesPerSample;
-
-  const samples = audioBuffer.getChannelData(0); // Mono channel 0
   const dataSize = samples.length * bytesPerSample;
   const buffer = new ArrayBuffer(44 + dataSize);
   const view = new DataView(buffer);
@@ -76,8 +97,8 @@ function audioBufferToWavBlob(audioBuffer) {
   writeString(view, 12, 'fmt ');
   // format chunk length
   view.setUint32(16, 16, true);
-  // sample format (raw)
-  view.setUint16(20, format, true);
+  // sample format (raw PCM = 1)
+  view.setUint16(20, 1, true);
   // channel count
   view.setUint16(22, numOfChan, true);
   // sample rate

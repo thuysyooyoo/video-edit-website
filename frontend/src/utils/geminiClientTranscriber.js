@@ -10,30 +10,27 @@ export const DEFAULT_GEMINI_MODELS = [
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
 ];
 
-export async function transcribeWithGeminiClient(base64Audio, totalDuration, apiKey, preferredModel = 'gemini-2.0-flash', onProgress = null) {
-  if (!apiKey || !apiKey.trim()) {
-    throw new Error('Vui lòng cung cấp Gemini API Key để thực hiện bóc băng AI.');
-  }
-
-  // Danh sách các model fallback theo thứ tự ưu tiên chính thức từ Google AI Studio
+/**
+ * Gửi 1 đoạn âm thanh (chunk) lên Google Gemini API
+ */
+async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel) {
   const candidateModels = [
     preferredModel,
     'gemini-2.0-flash',
     'gemini-1.5-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-pro'
-  ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i); // deduplicate
+    'gemini-2.0-flash-lite'
+  ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   const systemInstruction = `
 Bạn là chuyên gia bóc băng âm thanh (Speech-to-Text) và đồng bộ thời gian (Word-Level Alignment) chuyên nghiệp cho video ngắn dạng TikTok/Reels/Shorts.
 Nhiệm vụ của bạn:
 1. Nghe kỹ toàn bộ file âm thanh và bóc băng chính xác 100% từng từ tiếng Việt (hoặc tiếng Anh nếu có).
-2. Tự động tính toán mốc thời gian bắt đầu (start) và kết thúc (end) tính bằng GIÂY cho TỪNG TỪ MỘT, đảm bảo mốc thời gian trải đều mượt mà và tổng thời lượng xấp xỉ ${Math.round(totalDuration)} giây.
+2. Tự động tính toán mốc thời gian bắt đầu (start) và kết thúc (end) tính bằng GIÂY cho TỪNG TỪ MỘT, đảm bảo mốc thời gian trải đều mượt mà từ 0.0 đến ${Math.round(chunkDuration)} giây.
 3. Trả về định dạng JSON DUY NHẤT theo schema sau, KHÔNG thêm bất kỳ lời giải thích nào:
 
 {
-  "full_text": "Toàn bộ văn bản lời thoại...",
-  "duration": ${Math.round(totalDuration * 100) / 100},
+  "full_text": "Toàn bộ văn bản lời thoại của đoạn này...",
+  "duration": ${Math.round(chunkDuration * 100) / 100},
   "words": [
     { "word": "Chào", "start": 0.0, "end": 0.25, "score": 0.99 },
     { "word": "mọi", "start": 0.26, "end": 0.45, "score": 0.99 },
@@ -67,15 +64,11 @@ Nhiệm vụ của bạn:
     }
   };
 
-  let lastError = null;
+  let lastErr = null;
 
-  // Thử lần lượt các candidate models
   for (const model of candidateModels) {
     try {
-      if (onProgress) onProgress(30, `Đang kết nối Google Gemini Cloud (${model})...`);
-
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,16 +78,15 @@ Nhiệm vụ của bạn:
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson?.error?.message || response.statusText || 'Lỗi kết nối Gemini API';
-        // Nếu là lỗi 404 (model not found), tiếp tục thử model tiếp theo
-        if (response.status === 404 || errMsg.includes('no longer available')) {
-          console.warn(`[Gemini Model Fallback] Model ${model} không khả dụng, thử model tiếp theo...`);
-          lastError = new Error(errMsg);
+        
+        // Nếu là lỗi 404 (model not found), thử model tiếp theo
+        if (response.status === 404 && candidateModels.indexOf(model) < candidateModels.length - 1) {
+          console.warn(`[Gemini Model Fallback] Model ${model} trả về 404, thử model tiếp theo...`);
+          lastErr = new Error(errMsg);
           continue;
         }
-        throw new Error(`Google Gemini API Error (${response.status}): ${errMsg}`);
+        throw new Error(`Google Gemini API (${model}): ${errMsg}`);
       }
-
-      if (onProgress) onProgress(75, 'Gemini AI đang hoàn tất kịch bản và đồng bộ phụ đề...');
 
       const resData = await response.json();
       const textResponse = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -115,33 +107,104 @@ Nhiệm vụ của bạn:
         }
       }
 
-      const words = (parsed.words || []).map((w, idx) => ({
-        word: String(w.word || ''),
-        start: Number(w.start) || 0,
-        end: Number(w.end) || (Number(w.start) + 0.3),
-        score: Number(w.score) || 0.95
-      }));
-
-      const fullText = parsed.full_text || words.map(w => w.word).join(' ');
-      const duration = parsed.duration || totalDuration || (words.length > 0 ? words[words.length - 1].end : 60);
-
-      if (onProgress) onProgress(100, 'Đã bóc băng thành công!');
-
       return {
-        full_text: fullText,
-        duration: duration,
-        words: words
+        full_text: parsed.full_text || '',
+        duration: parsed.duration || chunkDuration,
+        words: (parsed.words || []).map((w) => ({
+          word: String(w.word || ''),
+          start: Math.max(0, Number(w.start) || 0),
+          end: Math.max(0, Number(w.end) || (Number(w.start) + 0.3)),
+          score: Number(w.score) || 0.95
+        }))
       };
 
     } catch (err) {
+      lastErr = err;
       if (candidateModels.indexOf(model) === candidateModels.length - 1) {
         throw err;
       }
-      lastError = err;
     }
   }
 
-  throw lastError || new Error('Không thể kết nối tới Google Gemini API.');
+  throw lastErr || new Error('Không thể kết nối tới Google Gemini API.');
+}
+
+/**
+ * ⚡ Bóc băng toàn bộ âm thanh (Tự động ghép nối các Chunks 120s nếu video dài)
+ */
+export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-2.0-flash', onProgress = null) {
+  if (!apiKey || !apiKey.trim()) {
+    throw new Error('Vui lòng cung cấp Gemini API Key để thực hiện bóc băng AI.');
+  }
+
+  // Chuẩn hóa danh sách chunks
+  let chunks = [];
+  let duration = totalDuration || 60;
+
+  if (typeof audioDataOrBase64 === 'object' && audioDataOrBase64.chunks && audioDataOrBase64.chunks.length > 0) {
+    chunks = audioDataOrBase64.chunks;
+    duration = audioDataOrBase64.duration || totalDuration;
+  } else {
+    const base64Str = typeof audioDataOrBase64 === 'string' ? audioDataOrBase64 : audioDataOrBase64.base64;
+    chunks = [{
+      index: 0,
+      startSec: 0,
+      endSec: duration,
+      duration: duration,
+      base64: base64Str
+    }];
+  }
+
+  const allWords = [];
+  const textParts = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const pct = Math.round(((i) / chunks.length) * 100);
+
+    if (onProgress) {
+      const startMin = Math.floor(chunk.startSec / 60);
+      const startSec = Math.floor(chunk.startSec % 60);
+      const endMin = Math.floor(chunk.endSec / 60);
+      const endSec = Math.floor(chunk.endSec % 60);
+      const timeStr = `${startMin}:${startSec.toString().padStart(2, '0')} - ${endMin}:${endSec.toString().padStart(2, '0')}`;
+      
+      onProgress(
+        pct, 
+        chunks.length > 1 
+          ? `Đang bóc băng đoạn ${i + 1}/${chunks.length} (${timeStr}) bằng Gemini AI...`
+          : `Đang gửi âm thanh lên Google Gemini AI (${preferredModel})...`
+      );
+    }
+
+    const chunkResult = await transcribeSingleChunk(chunk.base64, chunk.duration, apiKey, preferredModel);
+    
+    if (chunkResult.full_text) {
+      textParts.push(chunkResult.full_text);
+    }
+
+    // Dịch chuyển mốc thời gian của từng từ theo mốc bắt đầu của chunk
+    if (Array.isArray(chunkResult.words)) {
+      chunkResult.words.forEach(w => {
+        allWords.push({
+          word: w.word,
+          start: Math.round((chunk.startSec + w.start) * 100) / 100,
+          end: Math.round((chunk.startSec + w.end) * 100) / 100,
+          score: w.score
+        });
+      });
+    }
+  }
+
+  if (onProgress) onProgress(100, 'Đã bóc băng & đồng bộ phụ đề hoàn tất!');
+
+  const fullText = textParts.join(' ') || allWords.map(w => w.word).join(' ');
+
+  return {
+    full_text: fullText,
+    duration: duration,
+    words: allWords
+  };
 }
 
 /**
