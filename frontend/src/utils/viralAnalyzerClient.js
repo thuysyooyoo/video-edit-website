@@ -183,7 +183,24 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
   // ══════════════════════════════════════════════════════════════════════════════
   if (apiKey && fullText) {
     try {
-      const prompt = PROMPT_VIRAL_3_PILLARS.replace('{transcript_text}', fullText.slice(0, 8000));
+      // Định dạng kịch bản thành các đoạn có timestamp [MM:SS] để AI dễ dàng chia nhiều clip
+      const transcriptParagraphs = [];
+      const step = 25; // 25s
+      for (let t = 0; t < totalDuration; t += step) {
+        const tEnd = Math.min(totalDuration, t + step);
+        const segWords = words.filter(w => w.start >= t && w.start < tEnd);
+        if (segWords.length > 0) {
+          const segText = segWords.map(w => w.word).join(' ');
+          const mStart = Math.floor(t / 60);
+          const sStart = Math.floor(t % 60);
+          const mEnd = Math.floor(tEnd / 60);
+          const sEnd = Math.floor(tEnd % 60);
+          transcriptParagraphs.push(`[${mStart}:${sStart.toString().padStart(2, '0')} - ${mEnd}:${sEnd.toString().padStart(2, '0')}] (giây ${Math.round(t)} - ${Math.round(tEnd)}): ${segText}`);
+        }
+      }
+      const formattedTranscript = transcriptParagraphs.join('\n\n');
+
+      const prompt = PROMPT_VIRAL_3_PILLARS.replace('{transcript_text}', formattedTranscript.slice(0, 16000));
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       
       const res = await fetch(url, {
@@ -191,7 +208,7 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2000 }
+          generationConfig: { temperature: 0.5, maxOutputTokens: 6000 }
         })
       });
 

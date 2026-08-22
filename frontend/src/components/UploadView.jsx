@@ -33,7 +33,7 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
   // 'video_upload' | 'audio_upload' | 'audio_mic'
   const [activeMode, setActiveMode] = useState('video_upload'); 
   // 'full' (Dùng nguyên bản) | 'viral_ai' (Cắt clip viral AI 1-4 phút)
-  const [processingMode, setProcessingMode] = useState('full');
+  const [processingMode, setProcessingMode] = useState('viral_ai');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('opus_gemini_api_key') || '');
   const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash-lite');
   
