@@ -17,6 +17,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { toPng } from 'html-to-image';
 import { RefreshCw } from 'lucide-react';
 import { saveProjectToVault } from './utils/projectVault';
+import { getMediaFromIndexedDB, saveMediaToIndexedDB } from './utils/mediaStorage';
 
 export default function App() {
   const [data, setData] = useState(null);
@@ -591,12 +592,33 @@ export default function App() {
         try {
           const json = JSON.parse(savedLocal);
           if (json && json.has_data && json.viral_clips && json.viral_clips.length > 0) {
+            // 💾 Khôi phục file video/audio từ IndexedDB và cấp mới blob_url sau khi F5/Ctrl+F5
+            try {
+              const savedBlob = await getMediaFromIndexedDB('current_video_file');
+              if (savedBlob) {
+                const freshBlobUrl = URL.createObjectURL(savedBlob);
+                if (json.video_metadata) {
+                  json.video_metadata.blob_url = freshBlobUrl;
+                  json.video_metadata.video_path = freshBlobUrl;
+                  json.video_metadata.file = savedBlob;
+                }
+              }
+            } catch (idbErr) {
+              console.warn("IndexedDB load notice:", idbErr);
+            }
+
             setData(json);
             const firstClip = json.viral_clips[0];
             setActiveClip(firstClip);
             setCurrentTime(firstClip.start_time || 0);
             setCustomTitle(firstClip.title || 'Video Mới');
-            setCurrentView('editor');
+            
+            // Điều hướng view phù hợp (nếu là viral_ai có nhiều clip -> mở Dashboard)
+            if (json.processing_mode === 'viral_ai' && json.viral_clips.length > 1) {
+              setCurrentView('dashboard');
+            } else {
+              setCurrentView('editor');
+            }
             setIsLoading(false);
             return json;
           }
@@ -1959,6 +1981,7 @@ export default function App() {
       ) : currentView === 'upload' ? (
         <UploadView
           onProcessSuccess={handleProcessSuccess}
+          onBack={data?.has_data ? () => setCurrentView(data.viral_clips?.length > 1 ? 'dashboard' : 'editor') : null}
           onStartProcessing={handleStartProcessing}
           onCancelProcessing={handleCancelProcessing}
           isProcessing={isProcessing}

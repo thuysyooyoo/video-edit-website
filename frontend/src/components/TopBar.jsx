@@ -193,6 +193,46 @@ export default function TopBar({
           )}
         </div>
 
+        {/* ⏱️ Extend Clip (+5s Trước / +5s Sau) */}
+        {(onExtendStart || onExtendEnd) && (
+          <div className="relative" ref={extendRef}>
+            <button 
+              onClick={() => setIsExtendOpen(!isExtendOpen)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-slate-300 hover:text-white hover:bg-[#1c1f30] font-semibold transition"
+              title="Mở rộng thêm thời lượng đoạn clip"
+            >
+              <Clock className="w-3 h-3 text-amber-400" />
+              <span>Extend Clip</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+
+            {isExtendOpen && (
+              <div className="absolute left-0 top-full mt-1.5 w-48 bg-[#141622] border border-[#2d3248] rounded-2xl shadow-2xl p-1.5 z-50 space-y-1 animate-fade-in">
+                <button
+                  onClick={() => {
+                    onExtendStart && onExtendStart(5);
+                    setIsExtendOpen(false);
+                  }}
+                  className="w-full p-2 rounded-xl text-left text-xs hover:bg-[#202438] text-slate-200 hover:text-white flex items-center justify-between transition"
+                >
+                  <span className="font-semibold">⏮️ Thêm 5s ở đầu</span>
+                  <span className="text-[10px] text-amber-400 font-mono">+5s Start</span>
+                </button>
+                <button
+                  onClick={() => {
+                    onExtendEnd && onExtendEnd(5);
+                    setIsExtendOpen(false);
+                  }}
+                  className="w-full p-2 rounded-xl text-left text-xs hover:bg-[#202438] text-slate-200 hover:text-white flex items-center justify-between transition"
+                >
+                  <span className="font-semibold">⏭️ Thêm 5s ở cuối</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">+5s End</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Face Tracker */}
         <button 
           onClick={() => setFaceTrackerEnabled && setFaceTrackerEnabled(!faceTrackerEnabled)}
@@ -242,10 +282,10 @@ export default function TopBar({
             onChange={(e) => setSelectedModel && setSelectedModel(e.target.value)}
             className="bg-transparent text-slate-300 text-[10px] font-bold px-1.5 py-1 focus:outline-none cursor-pointer hover:text-white"
           >
+            <option value="gemini-3.5-flash-lite" className="bg-[#12131e] text-white">Gemini 3.5 Flash Lite</option>
+            <option value="gemini-3.5-flash" className="bg-[#12131e] text-white">Gemini 3.5 Flash</option>
             <option value="gemini-3.7-flash" className="bg-[#12131e] text-white">Gemini 3.7 Flash</option>
-            <option value="gemini-2.5-pro" className="bg-[#12131e] text-white">Gemini 2.5 Pro</option>
-            <option value="gemini-2.5-flash" className="bg-[#12131e] text-white">Gemini 2.5 Flash</option>
-            <option value="gemini-2.0-flash" className="bg-[#12131e] text-white">Gemini 2.0 Flash</option>
+            <option value="gemini-flash-latest" className="bg-[#12131e] text-white">Gemini Flash Latest</option>
           </select>
         </div>
 

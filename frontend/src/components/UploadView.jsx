@@ -13,6 +13,7 @@ import {
   FileAudio,
   CheckCircle2, 
   ArrowRight,
+  ArrowLeft,
   Clock,
   Layers,
   Wand2,
@@ -28,8 +29,9 @@ import {
 import { extractAudioFromMedia } from '../utils/browserAudioExtractor';
 import { transcribeWithGeminiClient, DEFAULT_GEMINI_MODELS } from '../utils/geminiClientTranscriber';
 import { analyzeViralClipsClient } from '../utils/viralAnalyzerClient';
+import { saveMediaToIndexedDB } from '../utils/mediaStorage';
 
-export default function UploadView({ onProcessSuccess, isProcessing: externalIsProcessing }) {
+export default function UploadView({ onProcessSuccess, onBack, isProcessing: externalIsProcessing }) {
   // 'video_upload' | 'audio_upload' | 'audio_mic'
   const [activeMode, setActiveMode] = useState('video_upload'); 
   // 'full' (Dùng nguyên bản) | 'viral_ai' (Cắt clip viral AI 1-4 phút)
@@ -196,6 +198,13 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
       const blobUrl = URL.createObjectURL(targetFile);
       const cleanTitle = targetFile.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' ');
 
+      // 💾 Lưu file video/audio gốc vào IndexedDB để sau khi F5 hoặc Ctrl+F5 không bao giờ mất hình
+      try {
+        await saveMediaToIndexedDB('current_video_file', targetFile);
+      } catch (e) {
+        console.warn("IndexedDB save failed:", e);
+      }
+
       const videoMeta = {
         id: `media_${Date.now()}`,
         title: cleanTitle,
@@ -237,7 +246,21 @@ export default function UploadView({ onProcessSuccess, isProcessing: externalIsP
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#0e1017] via-[#11131e] to-[#090a0f] text-slate-100 overflow-y-auto">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-[#0e1017] via-[#11131e] to-[#090a0f] text-slate-100 overflow-y-auto relative">
+      
+      {/* ⬅️ Nút Quay Lại Dashboard / Editor nếu đã có dự án */}
+      {onBack && (
+        <div className="w-full max-w-4xl flex items-center justify-between mb-2">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#141624] hover:bg-[#1f2236] text-slate-300 hover:text-white border border-[#262a3e] text-xs font-bold transition-all shadow-md active:scale-95"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
+            <span>← Quay Lại Dashboard / Editor</span>
+          </button>
+        </div>
+      )}
+
       <div className="max-w-4xl w-full space-y-6">
         
         {/* Header Title & Badge */}
