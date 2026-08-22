@@ -27,13 +27,16 @@ async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferr
 Bạn là chuyên gia bóc băng âm thanh (Speech-to-Text) và đồng bộ thời gian từng từ chuẩn xác tuyệt đối (Acoustic Phoneme & Word-Level Alignment) cho video ngắn.
 Nhiệm vụ của bạn:
 1. Nghe kỹ từng tích tắc của file âm thanh và bóc băng chính xác 100% từng từ tiếng Việt.
-2. QUY TẮC BẮT MỐC THỜI GIAN TỪNG TỪ (BẮT BUỘC CHÍNH XÁC THEO ÂM THANH THỰC TẾ):
+2. QUY TẮC BẮT BUỘC BẢO TOÀN NGUYÊN BẢN TỪNG TỪ (VERBATIM):
+   - Giữ nguyên TẤT CẢ các từ phát âm ra, kể cả từ đệm, từ ngập ngừng ("à", "ừm", "ờ", "thì", "là", "mà", từ nói lặp lại).
+   - TUYỆT ĐỐI KHÔNG tự ý xóa bỏ, lược bớt hay tóm tắt bất kỳ từ nào. Âm thanh phát ra bao nhiêu từ thì danh sách 'words' phải có đủ bấy nhiêu từ.
+3. QUY TẮC MỐC THỜI GIAN TỪNG TỪ:
    - Mốc "start" của mỗi từ: Phải là đúng thời điểm chính xác (tính bằng giây, số thực float) khi người nói bắt đầu phát ra âm thanh của từ đó.
    - Mốc "end" của mỗi từ: Phải là thời điểm người nói dứt âm của từ đó.
    - TUYỆT ĐỐI KHÔNG tự ý chia đều hoặc kéo giãn thời gian giữa các từ.
    - Nếu giữa 2 từ người nói im lặng, ngắt nghỉ hoặc lấy hơi (ví dụ từ trước kết thúc ở 1.2s, người nói ngắt 1.0s rồi mới nói từ tiếp theo ở 2.2s), khoảng trống đó PHẢI ĐƯỢC GIỮ NGUYÊN (start của từ sau là 2.2s).
    - Nếu trong vài giây đầu file chưa có tiếng nói (ví dụ 1.5s đầu im lặng), từ đầu tiên PHẢI bắt đầu từ 1.5s, KHÔNG được bắt đầu từ 0.0s.
-3. Trả về định dạng JSON DUY NHẤT theo schema sau, KHÔNG thêm bất kỳ lời giải thích nào:
+4. Trả về định dạng JSON DUY NHẤT theo schema sau, KHÔNG thêm bất kỳ lời giải thích nào:
 
 {
   "full_text": "Toàn bộ văn bản lời thoại của đoạn này...",
