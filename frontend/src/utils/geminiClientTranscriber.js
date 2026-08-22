@@ -4,25 +4,25 @@
  */
 
 export const DEFAULT_GEMINI_MODELS = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Khuyên dùng - Siêu tốc & Chuẩn xác)', desc: 'Mô hình chuẩn thế hệ mới của Google' },
-  { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Tối tân)', desc: 'Mô hình thông minh cao cấp nhất' },
-  { id: 'gemini-flash-latest', name: 'Gemini Flash Latest', desc: 'Tự động chọn bản Flash mới nhất' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Khuyên dùng - Siêu tốc & Chuẩn xác)', desc: 'Mô hình thế hệ mới chuẩn nhất của Google' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Cực kỳ ổn định)', desc: 'Mô hình bóc băng và xử lý văn bản chuẩn' },
+  { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite (Siêu nhẹ)', desc: 'Mô hình tối ưu tốc độ' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Suy luận sâu)', desc: 'Độ chính xác ngữ pháp cao nhất' }
 ];
 
-export async function transcribeWithGeminiClient(base64Audio, totalDuration, apiKey, preferredModel = 'gemini-2.5-flash', onProgress = null) {
+export async function transcribeWithGeminiClient(base64Audio, totalDuration, apiKey, preferredModel = 'gemini-2.0-flash', onProgress = null) {
   if (!apiKey || !apiKey.trim()) {
     throw new Error('Vui lòng cung cấp Gemini API Key để thực hiện bóc băng AI.');
   }
 
-  // Danh sách các model fallback theo thứ tự ưu tiên
+  // Danh sách các model fallback theo thứ tự ưu tiên chính thức từ Google AI Studio
   const candidateModels = [
     preferredModel,
-    'gemini-2.5-flash',
-    'gemini-3.6-flash',
-    'gemini-flash-latest',
-    'gemini-2.5-pro'
-  ].filter((v, i, a) => a.indexOf(v) === i); // deduplicate
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-pro'
+  ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i); // deduplicate
 
   const systemInstruction = `
 Bạn là chuyên gia bóc băng âm thanh (Speech-to-Text) và đồng bộ thời gian (Word-Level Alignment) chuyên nghiệp cho video ngắn dạng TikTok/Reels/Shorts.

@@ -33,7 +33,7 @@ export default function App() {
 
   // AI Copilot Drawer State & Selected Model (Phiên 4)
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gemini-3.7-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash');
 
   // Background Job Processing
   const [isProcessing, setIsProcessing] = useState(false);

@@ -87,7 +87,7 @@ function snapToWordBoundary(time, words, isEnd = false) {
 /**
  * AI Sinh Tiêu Đề Hook Bám Sát Kịch Bản
  */
-export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.5-flash') {
+export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.0-flash') {
   if (!text || !apiKey) return "TIÊU ĐỀ VIRAL CLIP";
   try {
     const prompt = PROMPT_GENERATE_HOOK_TITLE.replace('{text}', text.slice(0, 1000));
@@ -116,7 +116,7 @@ export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.5-f
 /**
  * Phân Tích Kịch Bản & Cắt Clips (Client-Side Pure JS + Gemini Cloud AI)
  */
-export async function analyzeViralClipsClient(transcript, videoMetadata = {}, apiKey = '', model = 'gemini-2.5-flash', processingMode = 'full') {
+export async function analyzeViralClipsClient(transcript, videoMetadata = {}, apiKey = '', model = 'gemini-2.0-flash', processingMode = 'full') {
   const fullText = transcript.full_text || '';
   const words = transcript.words || [];
   const totalDuration = transcript.duration || 60;

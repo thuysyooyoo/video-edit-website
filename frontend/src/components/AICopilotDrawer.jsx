@@ -21,14 +21,14 @@ export default function AICopilotDrawer({
   fontStyle,
   soundFxCount = 0,
   onExecuteAction,
-  selectedModel = 'gemini-3.7-flash',
+  selectedModel = 'gemini-2.0-flash',
   setSelectedModel
 }) {
   const [availableModels, setAvailableModels] = useState([
-    { id: 'gemini-3.7-flash', name: '⚡ Gemini 3.7 Flash', desc: 'Mới nhất & Siêu tốc' },
-    { id: 'gemini-2.5-pro', name: '🧠 Gemini 2.5 Pro', desc: 'Lý luận sâu & Viết kịch bản' },
-    { id: 'gemini-2.5-flash', name: '⚡ Gemini 2.5 Flash', desc: 'Cân bằng hiệu năng' },
-    { id: 'gemini-2.0-flash', name: '🚀 Gemini 2.0 Flash', desc: 'Mô hình chuẩn' }
+    { id: 'gemini-2.0-flash', name: '🚀 Gemini 2.0 Flash (Khuyên dùng)', desc: 'Thế hệ mới nhất & Siêu tốc' },
+    { id: 'gemini-1.5-flash', name: '⚡ Gemini 1.5 Flash', desc: 'Ổn định & Nhanh chóng' },
+    { id: 'gemini-2.0-flash-lite', name: '💡 Gemini 2.0 Flash Lite', desc: 'Siêu nhẹ & Tiết kiệm' },
+    { id: 'gemini-1.5-pro', name: '🧠 Gemini 1.5 Pro', desc: 'Lý luận sâu & Viết kịch bản' }
   ]);
 
   const [messages, setMessages] = useState([
