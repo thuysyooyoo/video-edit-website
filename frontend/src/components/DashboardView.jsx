@@ -178,25 +178,15 @@ export default function DashboardView({
                     {/* Action buttons */}
                     <div className="flex items-center gap-1 text-slate-400">
                       <button 
-                        title="Tải video HD"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`http://127.0.0.1:8000/api/stream/clip/${clip.id}`, '_blank');
-                        }}
-                        className="p-1 rounded hover:bg-[#1a1d2c] hover:text-white transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button 
-                        title="Mở trình chỉnh sửa chi tiết (Edit Clip)"
+                        title="Chỉnh sửa & Xuất clip này"
                         onClick={(e) => {
                           e.stopPropagation();
                           onGoToEditor(clip);
                         }}
-                        className="p-1 rounded hover:bg-[#1a1d2c] hover:text-brand-glow text-slate-300 transition-colors"
+                        className="px-2.5 py-1 rounded-lg bg-[#1a1d2c] hover:bg-indigo-600 hover:text-white text-slate-200 text-[10px] font-bold flex items-center gap-1 transition-all"
                       >
-                        <Scissors className="w-3.5 h-3.5 text-brand-glow" />
+                        <Scissors className="w-3 h-3 text-indigo-400" />
+                        <span>Edit Clip</span>
                       </button>
                     </div>
                   </div>
