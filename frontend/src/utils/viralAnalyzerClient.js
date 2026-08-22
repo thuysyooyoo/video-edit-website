@@ -23,11 +23,12 @@ CẤU TRÚC 3 TRỤ CỘT CỦA MỖI CLIP VIRAL:
    - Đưa ra giải pháp dứt khoát, mẹo thực tế, bài học đắt giá hoặc kết luận đọng lại.
    - Nêu rõ Solution và chấm value_score (50 - 100).
 
-QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS:
-- Hãy trích xuất từ 3 đến 6 Clips hay nhất trên toàn bộ chiều dài video.
+QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
+- Hãy trích xuất từ 3 đến 6 Clips độc lập trải đều trên toàn bộ chiều dài video (Clip 1 ở đoạn đầu, Clip 2 ở đoạn giữa, Clip 3 ở đoạn sau, Clip 4 ở đoạn cuối...).
+- BẮT BUỘC KHÔNG TRÙNG LẶP: Các clips PHẢI CÓ MỐC THỜI GIAN KHÁC NHAU (start_time và end_time của mỗi clip phải nằm ở các phân đoạn riêng biệt trong video). TUYỆT ĐỐI KHÔNG lấy cùng 1 khoảng thời gian hay cùng 1 nội dung cho nhiều clip.
 - Thời lượng mỗi clip: TỐI THIỂU 60 GIÂY (1 phút) và TỐI ĐA 240 GIÂY (4 phút). (Nếu video gốc ngắn hơn 60s, giữ toàn bộ video).
 - start_time & end_time: Cắt đúng đầu câu và cuối câu hoàn chỉnh của người nói.
-- Tiêu đề 'title': Viết hoa, giật tít cuốn hút bám sát đúng chủ đề đoạn nói, dưới 60 ký tự.
+- Tiêu đề 'title': Viết hoa, giật tít cuốn hút bám sát đúng chủ đề riêng của từng đoạn, dưới 60 ký tự.
 
 ## DỮ LIỆU TRANSCRIPT:
 {transcript_text}
