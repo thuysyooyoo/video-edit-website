@@ -24,19 +24,24 @@ async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferr
   ].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i);
 
   const systemInstruction = `
-Bạn là chuyên gia bóc băng âm thanh (Speech-to-Text) và đồng bộ thời gian (Word-Level Alignment) chuyên nghiệp cho video ngắn dạng TikTok/Reels/Shorts.
+Bạn là chuyên gia bóc băng âm thanh (Speech-to-Text) và đồng bộ thời gian từng từ chuẩn xác tuyệt đối (Acoustic Phoneme & Word-Level Alignment) cho video ngắn.
 Nhiệm vụ của bạn:
-1. Nghe kỹ toàn bộ file âm thanh và bóc băng chính xác 100% từng từ tiếng Việt (hoặc tiếng Anh nếu có).
-2. Tự động tính toán mốc thời gian bắt đầu (start) và kết thúc (end) tính bằng GIÂY cho TỪNG TỪ MỘT, đảm bảo mốc thời gian trải đều mượt mà từ 0.0 đến ${Math.round(chunkDuration)} giây.
+1. Nghe kỹ từng tích tắc của file âm thanh và bóc băng chính xác 100% từng từ tiếng Việt.
+2. QUY TẮC BẮT MỐC THỜI GIAN TỪNG TỪ (BẮT BUỘC CHÍNH XÁC THEO ÂM THANH THỰC TẾ):
+   - Mốc "start" của mỗi từ: Phải là đúng thời điểm chính xác (tính bằng giây, số thực float) khi người nói bắt đầu phát ra âm thanh của từ đó.
+   - Mốc "end" của mỗi từ: Phải là thời điểm người nói dứt âm của từ đó.
+   - TUYỆT ĐỐI KHÔNG tự ý chia đều hoặc kéo giãn thời gian giữa các từ.
+   - Nếu giữa 2 từ người nói im lặng, ngắt nghỉ hoặc lấy hơi (ví dụ từ trước kết thúc ở 1.2s, người nói ngắt 1.0s rồi mới nói từ tiếp theo ở 2.2s), khoảng trống đó PHẢI ĐƯỢC GIỮ NGUYÊN (start của từ sau là 2.2s).
+   - Nếu trong vài giây đầu file chưa có tiếng nói (ví dụ 1.5s đầu im lặng), từ đầu tiên PHẢI bắt đầu từ 1.5s, KHÔNG được bắt đầu từ 0.0s.
 3. Trả về định dạng JSON DUY NHẤT theo schema sau, KHÔNG thêm bất kỳ lời giải thích nào:
 
 {
   "full_text": "Toàn bộ văn bản lời thoại của đoạn này...",
   "duration": ${Math.round(chunkDuration * 100) / 100},
   "words": [
-    { "word": "Chào", "start": 0.0, "end": 0.25, "score": 0.99 },
-    { "word": "mọi", "start": 0.26, "end": 0.45, "score": 0.99 },
-    { "word": "người,", "start": 0.46, "end": 0.75, "score": 0.98 }
+    { "word": "Chào", "start": 0.35, "end": 0.65, "score": 0.99 },
+    { "word": "mọi", "start": 0.70, "end": 0.95, "score": 0.99 },
+    { "word": "người,", "start": 1.00, "end": 1.45, "score": 0.98 }
   ]
 }
 `;
@@ -52,13 +57,13 @@ Nhiệm vụ của bạn:
             }
           },
           {
-            text: "Hãy bóc băng toàn bộ file âm thanh này và xuất ra danh sách từng từ kèm timestamp start và end tính bằng giây chuẩn JSON."
+            text: "Hãy nghe kỹ âm thanh và bóc băng chính xác từng từ kèm mốc start và end đúng từng tích tắc âm thanh thực tế, xuất JSON chuẩn."
           }
         ]
       }
     ],
     generationConfig: {
-      temperature: 0.1,
+      temperature: 0.0,
       response_mime_type: "application/json"
     },
     systemInstruction: {

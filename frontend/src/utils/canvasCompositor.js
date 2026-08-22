@@ -339,20 +339,18 @@ export function getKaraokePhraseGroup(words = [], currentTime = 0, maxWords = 5)
     }
   }
 
-  // 1. Tìm nhóm đang phát tại currentTime (kèm dung sai 0.35s)
-  let activeGroup = groups.find(g => currentTime >= (g.start - 0.05) && currentTime <= (g.end + 0.35));
+  // 1. Tìm nhóm đang phát tại currentTime (chính xác theo khoảng thời gian phát âm)
+  let activeGroup = groups.find(g => currentTime >= (g.start - 0.05) && currentTime <= (g.end + 0.20));
   
-  // 2. Nếu ở khoảng lặng giữa các câu, giữ nhóm vừa đọc xong (hoặc nhóm chuẩn bị đọc)
+  // 2. Nếu ở khoảng dừng ngắn (< 0.4s), giữ lại nhóm vừa nói xong để tránh nhấp nháy
   if (!activeGroup) {
-    const upcoming = groups.find(g => g.start > currentTime && (g.start - currentTime) <= 0.8);
-    if (upcoming) {
-      activeGroup = upcoming;
-    } else {
-      activeGroup = groups.slice().reverse().find(g => g.end <= currentTime);
+    const recent = groups.slice().reverse().find(g => currentTime >= g.end && (currentTime - g.end) <= 0.4);
+    if (recent) {
+      activeGroup = recent;
     }
   }
 
-  return activeGroup || (groups.length > 0 ? groups[0] : null);
+  return activeGroup || null;
 }
 
 /**
