@@ -593,18 +593,29 @@ export default function App() {
           const json = JSON.parse(savedLocal);
           if (json && json.has_data && json.viral_clips && json.viral_clips.length > 0) {
             // 💾 Khôi phục file video/audio từ IndexedDB và cấp mới blob_url sau khi F5/Ctrl+F5
+            let hasValidMedia = false;
             try {
               const savedBlob = await getMediaFromIndexedDB('current_video_file');
-              if (savedBlob) {
+              if (savedBlob && (savedBlob instanceof Blob || savedBlob.size > 0)) {
                 const freshBlobUrl = URL.createObjectURL(savedBlob);
                 if (json.video_metadata) {
                   json.video_metadata.blob_url = freshBlobUrl;
                   json.video_metadata.video_path = freshBlobUrl;
                   json.video_metadata.file = savedBlob;
                 }
+                hasValidMedia = true;
               }
             } catch (idbErr) {
               console.warn("IndexedDB load notice:", idbErr);
+            }
+
+            // Nếu không còn file video thực trong IndexedDB -> Xóa cache hết hạn và trở về Upload để nạp file mới
+            if (!hasValidMedia && (!json.video_metadata?.blob_url || json.video_metadata.blob_url.startsWith('blob:'))) {
+              console.warn("Media blob expired. Resetting to upload view.");
+              localStorage.removeItem('opus_current_project');
+              setCurrentView('upload');
+              setIsLoading(false);
+              return null;
             }
 
             setData(json);
@@ -622,7 +633,9 @@ export default function App() {
             setIsLoading(false);
             return json;
           }
-        } catch(e) {}
+        } catch(e) {
+          localStorage.removeItem('opus_current_project');
+        }
       }
 
       // 2. Dự phòng: Kiểm tra server cục bộ nếu đang chạy dev server
