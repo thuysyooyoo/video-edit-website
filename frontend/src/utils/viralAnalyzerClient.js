@@ -56,10 +56,15 @@ QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
 `;
 
 const PROMPT_GENERATE_HOOK_TITLE = `
-Bạn là chuyên gia đặt tiêu đề Video Viral (Hook Headline).
-Hãy đọc kỹ đoạn kịch bản sau và sinh ra 1 TIÊU ĐỀ HOOK duy nhất:
-- Tiêu chuẩn: Dưới 45 ký tự, chữ in hoa, cực kỳ cuốn hút, giật tít, tò mò, thể hiện đúng cú twist hoặc giá trị lớn nhất của đoạn nói.
-- Ví dụ phong cách: "BÍ QUYẾT TĂNG DOANH SỐ ĐỘT PHÁ", "3 SAI LẦM CHẾT NGƯỜI KHI LÀM AI", "SỰ THẬT VỀ CHUYỂN ĐỔI SỐ"...
+Bạn là chuyên gia đặt tiêu đề Video Viral (Hook Headline) cho kênh chia sẻ kiến thức kinh doanh, xuất nhập khẩu, logistics và quản trị của Thúy.
+Hãy đọc kỹ đoạn kịch bản sau và sáng tạo ra 1 TIÊU ĐỀ HOOK duy nhất:
+- Tiêu chuẩn bắt buộc: Dưới 50 ký tự, chữ in hoa, có ý nghĩa trọn vẹn, cực kỳ cuốn hút, giật tít, tò mò, thể hiện đúng giá trị hoặc bài học lớn nhất của đoạn nói.
+- TUYỆT ĐỐI KHÔNG cắt vụn hoặc lấy ngẫu nhiên 1 câu thoại chưa hoàn chỉnh trong bài. Hãy tự tổng hợp thành 1 câu tiêu đề hoàn chỉnh.
+- Ví dụ phong cách:
+  + "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI!"
+  + "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH BỊ PHẠT"
+  + "DANH MỤC HÀNG HÓA RỦI RO: NHỮNG ĐIỀU CẦN BIẾT"
+  + "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ"
 
 ## KỊCH BẢN:
 {text}
@@ -90,29 +95,39 @@ function snapToWordBoundary(time, words, isEnd = false) {
  * AI Sinh Tiêu Đề Hook Bám Sát Kịch Bản
  */
 export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.5-flash') {
-  if (!text || !apiKey) return "TIÊU ĐỀ VIRAL CLIP";
-  try {
-    const prompt = PROMPT_GENERATE_HOOK_TITLE.replace('{text}', text.slice(0, 1000));
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 60 }
-      })
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const rawTitle = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (rawTitle) {
-        return rawTitle.replace(/^["'`*#]+|["'`*#]+$/g, '').slice(0, 60).toUpperCase();
+  if (!text) return "BÍ QUYẾT XUẤT NHẬP KHẨU VIRAL";
+  if (apiKey) {
+    try {
+      const prompt = PROMPT_GENERATE_HOOK_TITLE.replace('{text}', text.slice(0, 1500));
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 60 }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const rawTitle = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (rawTitle && rawTitle.length >= 8) {
+          return rawTitle.replace(/^["'`*#]+|["'`*#]+$/g, '').slice(0, 60).toUpperCase();
+        }
       }
+    } catch (e) {
+      console.warn("Hook generation notice:", e);
     }
-  } catch (e) {
-    console.warn("Hook generation notice:", e);
   }
-  return "TIÊU ĐỀ VIRAL CLIP";
+
+  // Smart Context-Aware Fallback (Không bao giờ lấy câu cụt lủn)
+  const lower = text.toLowerCase();
+  if (lower.includes('thuế') || lower.includes('mặt hàng')) return "QUY ĐỊNH MỚI VỀ THUẾ & MẶT HÀNG RỦI RO";
+  if (lower.includes('hs') || lower.includes('mã')) return "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH RỦI RO";
+  if (lower.includes('phương thức') || lower.includes('kiểm tra')) return "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI";
+  if (lower.includes('container') || lower.includes('mclean') || lower.includes('tàu')) return "LỊCH SỬ CHIẾC CONTAINER & BÀI HỌC QUẢN TRỊ";
+  if (lower.includes('chi phí') || lower.includes('tối ưu')) return "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ";
+  return "BÍ QUYẾT XUẤT NHẬP KHẨU THỰC CHIẾN";
 }
 
 /**

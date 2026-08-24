@@ -258,6 +258,27 @@ export default function OpusCanvasPreview({
   const currentKaraokeGroup = getKaraokePhraseGroup(clipScopedWords.length > 0 ? clipScopedWords : words, currentTime, 5);
   const activePhrase = currentKaraokeGroup?.words || [];
 
+  // 🎥 Tự động định vị con trỏ video và nạp ngay khung hình đầu tiên của clip khi mở Studio (Chống màn hình đen)
+  useEffect(() => {
+    const vid = videoRef?.current;
+    if (!vid) return;
+
+    const targetTime = clip?.start_time || 0;
+    
+    const applySeek = () => {
+      try {
+        vid.currentTime = targetTime;
+      } catch(e) {}
+    };
+
+    if (vid.readyState >= 1) {
+      applySeek();
+    } else {
+      vid.addEventListener('loadedmetadata', applySeek, { once: true });
+      vid.addEventListener('canplay', applySeek, { once: true });
+    }
+  }, [clip?.id, clip?.start_time, sourceVideoUrl]);
+
   // Trigger transition effect on scene change or seek
   useEffect(() => {
     setCurrentTransitionEffect(activeTransition);
