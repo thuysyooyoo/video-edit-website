@@ -1252,7 +1252,8 @@ export function renderCompositedFrame(ctx, options = {}) {
       }
     },
     'layer_captions': () => {
-      drawKaraokeCaptions(ctx, words, captionConfig || {}, fontStyle || {}, currentTime, targetWidth, targetHeight);
+      const clipWords = (words || []).filter(w => w.start >= (clipStartTime - 0.2) && w.end <= (clipStartTime + (options.clipDuration || 999999) + 0.5));
+      drawKaraokeCaptions(ctx, clipWords.length > 0 ? clipWords : words, captionConfig || {}, fontStyle || {}, currentTime, targetWidth, targetHeight);
     },
     'layer_title': () => {
       if (isTitleVisible && titleConfig?.visible !== false) {

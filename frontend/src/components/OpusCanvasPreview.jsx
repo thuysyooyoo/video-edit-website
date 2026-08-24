@@ -252,7 +252,10 @@ export default function OpusCanvasPreview({
     };
   }, [activeDragging, activeResizing, onUpdateTitleConfig, onUpdateCaptionConfig, onUpdateCaptionPos, onUpdateBrandConfig, onUpdateTextLayer, onUpdateTextLayerPos, setFontStyle]);
 
-  const currentKaraokeGroup = getKaraokePhraseGroup(words, currentTime, 5);
+  const clipStart = clip?.start_time ?? 0;
+  const clipEnd = clip?.end_time ?? 999999;
+  const clipScopedWords = (words || []).filter(w => !clip || (w.start >= (clipStart - 0.2) && w.end <= (clipEnd + 0.5)));
+  const currentKaraokeGroup = getKaraokePhraseGroup(clipScopedWords.length > 0 ? clipScopedWords : words, currentTime, 5);
   const activePhrase = currentKaraokeGroup?.words || [];
 
   // Trigger transition effect on scene change or seek
@@ -319,7 +322,6 @@ export default function OpusCanvasPreview({
     setEditingPhraseModal(null);
   };
 
-  const clipStart = clip?.start_time || 0;
   // Ưu tiên B-roll ở lớp trên cùng (Reverse array lookup)
   const activeBroll = [...brolls].reverse().find(b => {
     const isAbsMatch = currentTime >= (b.start - 0.05) && currentTime <= (b.end + 0.05);
