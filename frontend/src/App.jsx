@@ -862,29 +862,17 @@ export default function App() {
       intervals.push({ start, end });
     }
 
-    // Khoảng lặng explicit bị gạch bỏ
-    excludedPauseIndices.forEach((pIdx) => {
-      const targetPause = detectedPausesList.find(p => p.index === pIdx);
-      if (targetPause) {
-        intervals.push({
-          start: targetPause.start,
-          end: targetPause.end
-        });
-      }
-    });
-
-    // Khoảng thời gian bị khuyết giữa các phân cảnh (nếu xóa phân cảnh ở giữa)
-    if (activeClip?.scenes && activeClip.scenes.length > 1) {
-      for (let i = 1; i < activeClip.scenes.length; i++) {
-        const prevScene = activeClip.scenes[i - 1];
-        const currScene = activeClip.scenes[i];
-        if (currScene.start_time > prevScene.end_time + 0.05) {
+    // Khoảng lặng explicit do người dùng chủ động bấm gạch bỏ
+    if (excludedPauseIndices && excludedPauseIndices.size > 0) {
+      excludedPauseIndices.forEach((pIdx) => {
+        const targetPause = detectedPausesList.find(p => p.index === pIdx);
+        if (targetPause) {
           intervals.push({
-            start: prevScene.end_time,
-            end: currScene.start_time
+            start: targetPause.start,
+            end: targetPause.end
           });
         }
-      }
+      });
     }
 
     // Merge các khoảng nhảy gối nhau

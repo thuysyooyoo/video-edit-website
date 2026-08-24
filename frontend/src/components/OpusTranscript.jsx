@@ -51,6 +51,17 @@ export default function OpusTranscript({
     w => clip && w.start >= clip.start_time - 0.2 && w.end <= clip.end_time + 0.5
   );
 
+  // Khóa Đèn Phụ Đề Đơn Điểm: Xác định chính xác DUY NHẤT 1 TỪ đang phát tại currentTime
+  const activeWordOriginalIdx = useMemo(() => {
+    if (!clipWords || clipWords.length === 0) return -1;
+    // Tìm từ có mốc start <= currentTime <= end
+    const match = clipWords.find(w => currentTime >= (w.start - 0.05) && currentTime <= (w.end + 0.05));
+    if (match) {
+      return clipWords.indexOf(match);
+    }
+    return -1;
+  }, [clipWords, currentTime]);
+
   // Group words and pauses
   const items = [];
   let pauseCount = 0;
@@ -471,32 +482,13 @@ export default function OpusTranscript({
             const w = item.data;
             const idx = item.originalIdx;
             const isExcluded = excludedWordIndices.has(idx);
-            const isCurrent = currentTime >= w.start && currentTime <= w.end;
+            const isCurrent = idx === activeWordOriginalIdx;
             
             const cleanText = w.word.toLowerCase().replace(/[.,!?\"']/g, '').trim();
             const isFiller = COMMON_FILLERS_LIST.includes(cleanText);
 
             const q = searchQuery.toLowerCase().trim();
             const isSearchMatch = searchQuery.trim() && (cleanText.includes(q) || w.word.toLowerCase().includes(q));
-
-            const isKeyword = highlightKeywords && !isFiller && (
-              w.word.length >= 4 && (
-                w.word.toLowerCase().includes('luật') ||
-                w.word.toLowerCase().includes('hàng') ||
-                w.word.toLowerCase().includes('quy') ||
-                w.word.toLowerCase().includes('đúng') ||
-                w.word.toLowerCase().includes('rủi') ||
-                w.word.toLowerCase().includes('giá') ||
-                w.word.toLowerCase().includes('phẩm') ||
-                w.word.toLowerCase().includes('chuẩn') ||
-                w.word.toLowerCase().includes('xác') ||
-                w.word.toLowerCase().includes('thương') ||
-                w.word.toLowerCase().includes('chất') ||
-                w.word.toLowerCase().includes('thức') ||
-                w.word.toLowerCase().includes('nghị') ||
-                w.word.toLowerCase().includes('định')
-              )
-            );
 
             let wordStyleClass = 'text-slate-100 hover:bg-[#25283b] hover:text-white';
             if (isSearchMatch) {
@@ -508,11 +500,10 @@ export default function OpusTranscript({
             } else if (isExcluded) {
               wordStyleClass = 'opacity-25 line-through bg-rose-950/40 text-rose-400';
             } else if (isCurrent) {
+              // 🌟 DUY NHẤT 1 TỪ ĐANG PHÁT ĐƯỢC BẬT NỀN VÀNG ĐẬM
               wordStyleClass = 'bg-yellow-400 text-black font-extrabold shadow-md scale-105 rounded-md';
             } else if (isFiller) {
-              wordStyleClass = 'bg-[#3b2816] text-[#f59e0b] border border-amber-500/40 font-semibold hover:bg-amber-500/30';
-            } else if (isKeyword) {
-              wordStyleClass = 'text-yellow-400 font-bold hover:bg-yellow-400/20';
+              wordStyleClass = 'bg-[#2b1f14] text-[#fbbf24] border border-amber-500/30 font-medium hover:bg-amber-500/20';
             }
 
             return (

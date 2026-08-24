@@ -273,9 +273,15 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
               }
             ];
 
+            let clipTitle = (c.title || '').trim();
+            if (!clipTitle || clipTitle.toUpperCase().startsWith('CLIP VIRAL')) {
+              const clipSliceText = c.hook || (words.filter(w => w.start >= sStart && w.end <= sEnd).map(w => w.word).slice(0, 10).join(' '));
+              clipTitle = clipSliceText ? clipSliceText.replace(/[.,!?\"']/g, '').slice(0, 50).toUpperCase() : `CÂU CHUYỆN VIRAL #${idx + 1}`;
+            }
+
             return {
               id: idx + 1,
-              title: (c.title || `CLIP VIRAL #${idx + 1}`).toUpperCase(),
+              title: clipTitle.toUpperCase(),
               start_time: sStart,
               end_time: sEnd,
               duration: cDur,
@@ -303,7 +309,7 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
     }
   }
 
-  // Fallback Heuristic Chia Clip 60s nếu AI bận
+  // Fallback Heuristic: Sinh Tiêu Đề Hook bám sát nội dung kịch bản cho từng clip
   const fallbackClips = [];
   const clipLength = Math.min(totalDuration, 90.0);
   const numClips = Math.max(1, Math.min(5, Math.ceil(totalDuration / clipLength)));
@@ -316,9 +322,19 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
     const clipWords = words.filter(w => w.start >= cStart && w.end <= cEnd);
     const clipText = clipWords.map(w => w.word).join(' ');
 
+    // Tạo tiêu đề Hook giật tít từ câu đầu của đoạn này
+    let smartTitle = '';
+    const firstSentence = clipText.split(/[.?!]/)[0] || '';
+    if (firstSentence.trim().length >= 8) {
+      smartTitle = firstSentence.trim().replace(/[.,!?\"']/g, '').slice(0, 55).toUpperCase();
+    } else {
+      smartTitle = clipWords.slice(0, 8).map(w => w.word).join(' ').replace(/[.,!?\"']/g, '').toUpperCase();
+    }
+    if (!smartTitle) smartTitle = `BÍ QUYẾT XUẤT NHẬP KHẨU #${i + 1}`;
+
     fallbackClips.push({
       id: i + 1,
-      title: `CLIP VIRAL #${i + 1} (${Math.round(cDur)}S)`,
+      title: smartTitle,
       start_time: cStart,
       end_time: cEnd,
       duration: cDur,
