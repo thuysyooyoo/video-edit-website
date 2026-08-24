@@ -111,114 +111,133 @@ export default function DashboardView({
 
       {/* ── Clips Grid View (Screenshot 1 Layout) ── */}
       <main className="flex-1 p-6 overflow-y-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {filteredClips.map((clip, index) => {
-            const score = clip.overall_score || clip.hook_score || (95 - index * 3);
-            const scoreColor = score >= 90 ? 'text-emerald-400' : score >= 80 ? 'text-yellow-400' : 'text-slate-300';
-            const cardVideoSrc = sourceVideoUrl || clip.blob_url || clip.video_path;
+        {filteredClips.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-16 h-16 rounded-3xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mb-4 shadow-xl">
+              <Sparkles className="w-8 h-8 text-amber-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Chưa Có Clip Nào</h3>
+            <p className="text-xs text-slate-400 max-w-sm mb-6">
+              Vui lòng tải lên một file video hoặc âm thanh để AI bóc băng và tự động trích xuất các clip viral cho bạn.
+            </p>
+            <button
+              onClick={onOpenUpload}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tải Video Lên Ngay</span>
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {filteredClips.map((clip, index) => {
+              const score = clip.overall_score || clip.hook_score || (95 - index * 3);
+              const scoreColor = score >= 90 ? 'text-emerald-400' : score >= 80 ? 'text-yellow-400' : 'text-slate-300';
+              const cardVideoSrc = sourceVideoUrl || clip.blob_url || clip.video_path;
 
-            return (
-              <div key={clip.id} className="flex flex-col group select-none">
-                {/* 9:16 Vertical Video Card */}
-                <div 
-                  onClick={() => onSelectClip ? onSelectClip(clip) : onGoToEditor(clip)}
-                  className="relative aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-[#24273a] group-hover:border-indigo-500/80 group-hover:shadow-xl group-hover:shadow-indigo-500/10 transition-all cursor-pointer flex items-center justify-center"
-                >
-                  {/* Background Video Poster Preview hoặc Audio Visualizer */}
-                  {!isAudioOnly && cardVideoSrc ? (
-                    <video
-                      src={cardVideoSrc}
-                      className="w-full h-full object-cover pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity"
-                      muted
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-[#111322] to-black flex flex-col items-center justify-center p-4 text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2 shadow-lg">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                      <span className="text-[10px] font-bold text-indigo-300 uppercase">Audio Story</span>
-                    </div>
-                  )}
-
-                  {/* Top Duration Pill */}
-                  <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-white">
-                    {formatDuration(clip.duration)}
-                  </div>
-
-                  {/* Top Headline Banner on Video */}
-                  {!disableHeadline && (
-                    <div className="absolute top-8 left-2 right-2 text-center pointer-events-none">
-                      <div className="bg-white/95 text-black font-black text-[10px] px-2 py-1 rounded shadow-md inline-block max-w-[95%] uppercase leading-tight line-clamp-2">
-                        {clip.title}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Center Play Button on Hover */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 rounded-full bg-white/90 text-black flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                      <Play className="w-4 h-4 fill-current ml-0.5" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Below Card: Score, 4 Virality Metrics, and Title */}
-                <div className="mt-2.5 space-y-1.5">
-                  {/* Score & Actions Row */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-lg font-black ${scoreColor}`}>
-                        {clip.overall_score || score}
-                      </span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        {clip.hook_grade || 'A+'}
-                      </span>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-1 text-slate-400">
-                      <button 
-                        title="Chỉnh sửa & Xuất clip này"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onGoToEditor(clip);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-[#1a1d2c] hover:bg-indigo-600 hover:text-white text-slate-200 text-[10px] font-bold flex items-center gap-1 transition-all"
-                      >
-                        <Scissors className="w-3 h-3 text-indigo-400" />
-                        <span>Edit Clip</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 4-Axis Virality Metrics (SupoClip Style) */}
-                  <div className="grid grid-cols-3 gap-1 text-[9px] font-mono text-slate-400 bg-[#141624] p-1.5 rounded-lg border border-[#202438]">
-                    <div title="Điểm Hook mở đầu">
-                      <span className="text-slate-500 block text-[8px]">HOOK</span>
-                      <strong className="text-amber-300">{clip.hook_score || 92}</strong>
-                    </div>
-                    <div title="Điểm tương tác / giữ chân">
-                      <span className="text-slate-500 block text-[8px]">ENGAGE</span>
-                      <strong className="text-emerald-300">{clip.engagement_score || 90}</strong>
-                    </div>
-                    <div title="Điểm giá trị giải pháp">
-                      <span className="text-slate-500 block text-[8px]">VALUE</span>
-                      <strong className="text-cyan-300">{clip.value_score || 94}</strong>
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <h3 
-                    onClick={() => onSelectClip(clip)}
-                    className="font-bold text-xs text-slate-200 line-clamp-2 leading-snug hover:text-brand-glow cursor-pointer transition-colors"
+              return (
+                <div key={clip.id} className="flex flex-col group select-none">
+                  {/* 9:16 Vertical Video Card */}
+                  <div 
+                    onClick={() => onSelectClip ? onSelectClip(clip) : onGoToEditor(clip)}
+                    className="relative aspect-[9/16] bg-black rounded-2xl overflow-hidden border border-[#24273a] group-hover:border-indigo-500/80 group-hover:shadow-xl group-hover:shadow-indigo-500/10 transition-all cursor-pointer flex items-center justify-center"
                   >
-                    {clip.title}
-                  </h3>
+                    {/* Background Video Poster Preview hoặc Audio Visualizer */}
+                    {!isAudioOnly && cardVideoSrc ? (
+                      <video
+                        src={cardVideoSrc}
+                        className="w-full h-full object-cover pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity"
+                        muted
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-[#111322] to-black flex flex-col items-center justify-center p-4 text-center">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2 shadow-lg">
+                          <Sparkles className="w-6 h-6" />
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-300 uppercase">Audio Story</span>
+                      </div>
+                    )}
+
+                    {/* Top Duration Pill */}
+                    <div className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-white">
+                      {formatDuration(clip.duration)}
+                    </div>
+
+                    {/* Top Headline Banner on Video */}
+                    {!disableHeadline && (
+                      <div className="absolute top-8 left-2 right-2 text-center pointer-events-none">
+                        <div className="bg-white/95 text-black font-black text-[10px] px-2 py-1 rounded shadow-md inline-block max-w-[95%] uppercase leading-tight line-clamp-2">
+                          {clip.title}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Center Play Button on Hover */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-10 h-10 rounded-full bg-white/90 text-black flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                        <Play className="w-4 h-4 fill-current ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Below Card: Score, 4 Virality Metrics, and Title */}
+                  <div className="mt-2.5 space-y-1.5">
+                    {/* Score & Actions Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-lg font-black ${scoreColor}`}>
+                          {clip.overall_score || score}
+                        </span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          {clip.hook_grade || 'A+'}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 text-slate-400">
+                        <button 
+                          title="Chỉnh sửa & Xuất clip này"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onGoToEditor(clip);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-[#1a1d2c] hover:bg-indigo-600 hover:text-white text-slate-200 text-[10px] font-bold flex items-center gap-1 transition-all"
+                        >
+                          <Scissors className="w-3 h-3 text-indigo-400" />
+                          <span>Edit Clip</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Axis Virality Metrics (SupoClip Style) */}
+                    <div className="grid grid-cols-3 gap-1 text-[9px] font-mono text-slate-400 bg-[#141624] p-1.5 rounded-lg border border-[#202438]">
+                      <div title="Điểm Hook mở đầu">
+                        <span className="text-slate-500 block text-[8px]">HOOK</span>
+                        <strong className="text-amber-300">{clip.hook_score || 92}</strong>
+                      </div>
+                      <div title="Điểm tương tác / giữ chân">
+                        <span className="text-slate-500 block text-[8px]">ENGAGE</span>
+                        <strong className="text-emerald-300">{clip.engagement_score || 90}</strong>
+                      </div>
+                      <div title="Điểm giá trị giải pháp">
+                        <span className="text-slate-500 block text-[8px]">VALUE</span>
+                        <strong className="text-cyan-300">{clip.value_score || 94}</strong>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 
+                      onClick={() => onSelectClip ? onSelectClip(clip) : onGoToEditor(clip)}
+                      className="font-bold text-xs text-slate-200 line-clamp-2 leading-snug hover:text-brand-glow cursor-pointer transition-colors"
+                    >
+                      {clip.title}
+                    </h3>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {/* Floating Questions button bottom-right like Opus Clip */}

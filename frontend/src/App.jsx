@@ -23,7 +23,7 @@ export default function App() {
   const [data, setData] = useState(null);
   const [activeClip, setActiveClip] = useState(null);
   const [selectedPreviewClip, setSelectedPreviewClip] = useState(null);
-  const [currentView, setCurrentView] = useState('dashboard'); // 'upload' | 'dashboard' | 'editor'
+  const [currentView, setCurrentView] = useState('upload'); // 'upload' | 'dashboard' | 'editor'
   
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
