@@ -27,6 +27,7 @@ import {
   Globe
 } from 'lucide-react';
 import { extractAudioFromMedia } from '../utils/browserAudioExtractor';
+import { transcribeWithGroqWhisper } from '../utils/groqWhisperTranscriber';
 import { transcribeWithWhisperWeb } from '../utils/whisperWebTranscriber';
 import { transcribeWithGeminiClient, DEFAULT_GEMINI_MODELS } from '../utils/geminiClientTranscriber';
 import { analyzeViralClipsClient } from '../utils/viralAnalyzerClient';
@@ -37,6 +38,7 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
   const [activeMode, setActiveMode] = useState('video_upload'); 
   // 'full' (Dùng nguyên bản) | 'viral_ai' (Cắt clip viral AI 1-4 phút)
   const [processingMode, setProcessingMode] = useState('viral_ai');
+  const [groqApiKey, setGroqApiKey] = useState(() => localStorage.getItem('opus_groq_api_key') || '');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('opus_gemini_api_key') || '');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   
@@ -62,6 +64,12 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
   const audioChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
   const previewAudioRef = useRef(null);
+
+  useEffect(() => {
+    if (groqApiKey) {
+      localStorage.setItem('opus_groq_api_key', groqApiKey.trim());
+    }
+  }, [groqApiKey]);
 
   useEffect(() => {
     if (apiKey) {
@@ -163,8 +171,13 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
       }
     }
 
+    if (!groqApiKey || !groqApiKey.trim()) {
+      setErrorMsg('Vui lòng nhập Groq API Key để bóc băng siêu tốc Whisper Large-V3 chuẩn sóng âm 100%.');
+      return;
+    }
+
     if (!apiKey || !apiKey.trim()) {
-      setErrorMsg('Vui lòng nhập Google Gemini API Key để thực hiện bóc băng AI.');
+      setErrorMsg('Vui lòng nhập Google Gemini API Key để tạo Tiêu Đề Hook & Cắt Clip Viral.');
       return;
     }
 
@@ -174,23 +187,35 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
     setProgressMsg('Đang khởi tạo trình xử lý Web Audio...');
 
     try {
-      // 1. Tách và giải mã sóng âm 16kHz PCM chuẩn xác trong trình duyệt
+      // 1. Tách và giải mã sóng âm 16kHz PCM chuẩn xác trong RAM trình duyệt
       const audioResult = await extractAudioFromMedia(targetFile, (pct, msg) => {
-        setProgressPct(Math.round(pct * 0.25)); // 0 - 25%
+        setProgressPct(Math.round(pct * 0.20)); // 0 - 20%
         setProgressMsg(msg);
       });
 
-      // 2. Bóc băng chuẩn sóng âm bằng mô hình AI Whisper Web (100% không dùng Gemini nghe âm thanh)
-      const transcript = await transcribeWithWhisperWeb(
-        audioResult,
-        audioResult.duration,
-        (pct, msg) => {
-          setProgressPct(25 + Math.round(pct * 0.55)); // 25 - 80%
-          setProgressMsg(msg);
-        }
-      );
+      // 2. Bóc băng siêu tốc 0.8s chuẩn sóng âm 100% bằng Whisper Large-V3 (Groq API)
+      let transcript;
+      if (groqApiKey && groqApiKey.trim()) {
+        transcript = await transcribeWithGroqWhisper(
+          audioResult,
+          groqApiKey.trim(),
+          (pct, msg) => {
+            setProgressPct(20 + Math.round(pct * 0.55)); // 20 - 75%
+            setProgressMsg(msg);
+          }
+        );
+      } else {
+        transcript = await transcribeWithWhisperWeb(
+          audioResult,
+          audioResult.duration,
+          (pct, msg) => {
+            setProgressPct(20 + Math.round(pct * 0.55));
+            setProgressMsg(msg);
+          }
+        );
+      }
 
-      setProgressPct(82);
+      setProgressPct(80);
       setProgressMsg(processingMode === 'viral_ai' ? 'Gemini AI đang phân tích 3 trụ cột (Hook - Problem - Solution)...' : 'Gemini AI đang đúc kết Tiêu Đề Hook 2 vế bám sát nội dung...');
 
       // 3. Phân tích kịch bản, tạo Tiêu Đề Hook và chia phân cảnh
@@ -276,48 +301,86 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
           </p>
         </div>
 
-        {/* Gemini API Key Configuration Box */}
-        <div className="p-4 bg-[#141724] border border-[#23273a] rounded-2xl shadow-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
-              <Key className="w-4 h-4 text-amber-400" />
-              <span>Google Gemini API Key</span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                Miễn Phí
-              </span>
-            </label>
-            <a 
-              href="https://aistudio.google.com/app/apikey" 
-              target="_blank" 
-              rel="noreferrer"
-              className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium"
-            >
-              Lấy API Key miễn phí tại đây ↗
-            </a>
+        {/* Dual API Key Configuration Grid (Groq Whisper Large-V3 + Google Gemini) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* 1. Groq API Key Box (Bóc băng siêu tốc 0.8s chuẩn sóng âm 100%) */}
+          <div className="p-4 bg-[#141724] border border-amber-500/30 rounded-2xl shadow-xl space-y-2.5 relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-amber-400" />
+                <span>Groq API Key</span>
+                <span className="text-[10px] text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-semibold">
+                  Whisper Large-V3
+                </span>
+              </label>
+              <a 
+                href="https://console.groq.com/keys" 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-[11px] text-amber-400 hover:text-amber-300 underline font-semibold flex items-center gap-1"
+              >
+                Lấy Key Groq miễn phí ↗
+              </a>
+            </div>
+            <input
+              type="password"
+              value={groqApiKey}
+              onChange={(e) => setGroqApiKey(e.target.value)}
+              placeholder="Dán Groq API Key (gsk_...) bóc băng 0.8s..."
+              className="w-full bg-[#0a0b12] border border-[#272b40] focus:border-amber-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+            />
+            <p className="text-[10px] text-slate-400">
+              ⚡ Mô hình Whisper Large-V3 đo sóng âm từng từ chuẩn 100%, 0% lặp từ.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-            <div className="sm:col-span-8">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Dán Gemini API Key (AIzaSy...) để bắt đầu..."
-                className="w-full bg-[#0a0b12] border border-[#272b40] rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
-              />
-            </div>
-            <div className="sm:col-span-4">
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full bg-[#0a0b12] border border-[#272b40] rounded-xl px-3 py-2 text-xs text-slate-200 font-bold focus:outline-none focus:border-indigo-500"
+          {/* 2. Google Gemini API Key Box (Cắt 3 Trụ Cột, Tiêu Đề Hook & Sửa Chính Tả) */}
+          <div className="p-4 bg-[#141724] border border-indigo-500/30 rounded-2xl shadow-xl space-y-2.5 relative overflow-hidden group">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Key className="w-4 h-4 text-indigo-400" />
+                <span>Gemini API Key</span>
+                <span className="text-[10px] text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-1.5 py-0.5 rounded-full font-semibold">
+                  Cắt Clip & Hook
+                </span>
+              </label>
+              <a 
+                href="https://aistudio.google.com/app/apikey" 
+                target="_blank" 
+                rel="noreferrer"
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-semibold flex items-center gap-1"
               >
-                {DEFAULT_GEMINI_MODELS.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+                Lấy Key Gemini miễn phí ↗
+              </a>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="sm:col-span-7">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Dán Gemini API Key (AIzaSy...)..."
+                  className="w-full bg-[#0a0b12] border border-[#272b40] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none font-mono"
+                />
+              </div>
+              <div className="sm:col-span-5">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full bg-[#0a0b12] border border-[#272b40] rounded-xl px-2 py-2 text-xs text-slate-200 font-bold focus:outline-none focus:border-indigo-500"
+                >
+                  {DEFAULT_GEMINI_MODELS.map(m => (
+                    <option key={m.id} value={m.id}>{m.name.split('(')[0]}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400">
+              🧠 Đúc kết Tiêu Đề Hook 2 vế, cắt 3 trụ cột & AI sửa chính tả toàn cục.
+            </p>
           </div>
+
         </div>
 
         {/* Mode Selector Tabs */}

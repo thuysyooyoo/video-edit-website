@@ -57,18 +57,16 @@ QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
 
 const PROMPT_GENERATE_HOOK_TITLE = `
 Bạn là bậc thầy giật tít Video Viral triệu view (Hook Headline Master) trên TikTok, Reels và Shorts.
-Hãy đọc kỹ nội dung kịch bản và sáng tạo ra ĐÚNG 1 TIÊU ĐỀ HOOK đỉnh cao:
+Hãy đọc kỹ nội dung kịch bản và sáng tạo ra ĐÚNG 1 TIÊU ĐỀ HOOK đỉnh cao thuộc 1 trong 3 thể loại thu hút nhất:
+1. BÀI HỌC / BÍ QUYẾT ĐẮT GIÁ: Ví dụ "TRA CỨU MÃ HS: 2 CÁCH NHANH NHẤT!" hoặc "TỐI ƯU CHI PHÍ: TIẾT KIỆM 50% VẬN CHUYỂN!"
+2. CẢNH BÁO / RỦI RO CẦN TRÁNH: Ví dụ "MẶT HÀNG RỦI RO: TRÁNH BỊ PHẠT NẶNG!" hoặc "LỖI XUẤT KHẨU: 90% DOANH NGHIỆP MẮC PHẢI!"
+3. CÂU HỎI TÒ MÒ / KÍCH THÍCH TƯ DUY: Ví dụ "DÂN XUẤT NHẬP KHẨU: ĐÃ BIẾT LUẬT MỚI CHƯA?" hoặc "CONTAINER ĐẦU TIÊN: RA ĐỜI THẾ NÀO?"
+
 - CẤU TRÚC BẮT BUỘC 2 VẾ (Ngăn cách bằng dấu hai chấm ":"):
   + Vế 1 (Chủ đề / Đối tượng nóng): 2-4 từ.
-  + Vế 2 (Bài học / Cảnh báo / Bí quyết đắt giá nhất): 3-6 từ.
+  + Vế 2 (Bài học / Cảnh báo / Câu hỏi giật tít): 3-6 từ.
 - TỔNG ĐỘ DÀI: Dưới 45 ký tự, chữ IN HOA TOÀN BỘ, không dài dòng, không dùng từ nối rườm rà.
 - TUYỆT ĐỐI KHÔNG cắt vụn câu thoại nói ngẫu nhiên trong bài. PHẢI TỰ ĐÚC KẾT TIÊU ĐỀ CÓ Ý NGHĨA TRỌN VẸN.
-- Ví dụ chuẩn mẫu:
-  + "DÂN XUẤT NHẬP KHẨU: 2 CÁCH KIỂM TRA MỚI!"
-  + "TRA CỨU MÃ HS: TRÁNH BỊ PHẠT NẶNG!"
-  + "MẶT HÀNG RỦI RO: ĐIỀU DOANH NGHIỆP CẦN BIẾT!"
-  + "LỖI XUẤT KHẨU: 90% DOANH NGHIỆP MẮC PHẢI!"
-  + "BÍ QUYẾT LOGISTICS: TỐI ƯU 50% CHI PHÍ!"
 
 ## NỘI DUNG KỊCH BẢN:
 {text}
