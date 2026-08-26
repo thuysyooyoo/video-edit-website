@@ -29,7 +29,8 @@ export default function WysiwygExportModal({
   currentTime = 0,
   onSeek,
   setIsExporting,
-  totalDuration = 180
+  totalDuration = 180,
+  excludedWordIndices = new Set()
 }) {
   const [status, setStatus] = useState('idle'); // idle | preparing | recording | converting | completed | error
   const [progress, setProgress] = useState(0);
@@ -543,6 +544,8 @@ export default function WysiwygExportModal({
             transitionProgress,
             currentTime: currT,
             clipStartTime: clipStart,
+            clipDuration: rawDuration,
+            excludedWordIndices: excludedWordIndices || new Set(),
             layerOrder,
             targetWidth: 1080,
             targetHeight: 1920
@@ -583,9 +586,10 @@ export default function WysiwygExportModal({
       setProgress(100);
       setStatusMessage('Đang hoàn tất đóng gói video Full HD...');
 
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/mp4' }) || new Blob(recordedChunksRef.current, { type: 'video/webm' });
+      // BUG #10 FIX: MediaRecorder outputs WebM — use correct MIME type and extension
+      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
       const safeTitle = (customTitle || clip?.title || `clip_${clip?.id || 1}`).replace(/[^\w\s\-_]/gi, '').trim().replace(/\s+/g, '_');
-      const targetName = `WYSIWYG_HD_${safeTitle}.mp4`;
+      const targetName = `WYSIWYG_HD_${safeTitle}.webm`;
 
       const videoUrl = URL.createObjectURL(blob);
       setFileName(targetName);

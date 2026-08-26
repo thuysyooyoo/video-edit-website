@@ -1714,10 +1714,24 @@ export default function App() {
     });
   };
 
+  // BUG #11 FIX: Delete the actually selected layer by its ID
   const handleDeleteSelectedLayer = () => {
-    if (brolls.length > 0) setBrolls(brolls.slice(0, -1));
-    else if (textLayers.length > 0) setTextLayers(textLayers.slice(0, -1));
-    else if (soundFxMarkers.length > 0) setSoundFxMarkers(soundFxMarkers.slice(0, -1));
+    if (selectedBrollId) {
+      setBrolls(prev => prev.filter(b => b.id !== selectedBrollId));
+      setSelectedBrollId(null);
+    } else if (selectedTextLayerId) {
+      setTextLayers(prev => prev.filter(t => t.id !== selectedTextLayerId));
+      setSelectedTextLayerId(null);
+    } else if (selectedAnimatedStickerId) {
+      setAnimatedStickers(prev => prev.filter(s => s.id !== selectedAnimatedStickerId));
+      setSelectedAnimatedStickerId(null);
+    } else if (brolls.length > 0) {
+      setBrolls(prev => prev.slice(0, -1));
+    } else if (textLayers.length > 0) {
+      setTextLayers(prev => prev.slice(0, -1));
+    } else if (soundFxMarkers.length > 0) {
+      setSoundFxMarkers(prev => prev.slice(0, -1));
+    }
   };
 
   const handleExport = async () => {
@@ -2431,6 +2445,7 @@ export default function App() {
           onSeek={handleSeek}
           setIsExporting={setIsExportingHd}
           totalDuration={data?.transcript?.duration || activeClip?.duration || 180}
+          excludedWordIndices={excludedWordIndices}
         />
       </ErrorBoundary>
     </div>

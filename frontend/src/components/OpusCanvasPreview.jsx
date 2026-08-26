@@ -91,6 +91,8 @@ export default function OpusCanvasPreview({
   
   const brollVideoRef = useRef(null);
   const brollImageRef = useRef(null);
+  const fitVideoRef = useRef(null);    // BUG #8 FIX: ref for fit-mode blur video
+  const splitVideoRef = useRef(null);  // BUG #8 FIX: ref for split-mode speaker 2 video
   const segmentationCanvasRef = useRef(null);
 
   // Dynamic Z-Index based on custom Layer Stacking Order
@@ -351,11 +353,9 @@ export default function OpusCanvasPreview({
   };
 
   // Ưu tiên B-roll ở lớp trên cùng (Reverse array lookup)
+  // BUG #7 FIX: Only use absolute time matching to prevent double-trigger
   const activeBroll = [...brolls].reverse().find(b => {
-    const isAbsMatch = currentTime >= (b.start - 0.05) && currentTime <= (b.end + 0.05);
-    const relTime = currentTime - clipStart;
-    const isRelMatch = relTime >= (b.start - 0.05) && relTime <= (b.end + 0.05);
-    return isAbsMatch || isRelMatch;
+    return currentTime >= (b.start - 0.05) && currentTime <= (b.end + 0.05);
   });
 
   // Sync B-Roll video with main player
@@ -373,6 +373,22 @@ export default function OpusCanvasPreview({
       }
     }
   }, [currentTime, isPlaying, activeBroll, clipStart]);
+
+  // BUG #8 FIX: Sync fit/split background videos with main player
+  useEffect(() => {
+    [fitVideoRef, splitVideoRef].forEach(ref => {
+      const vid = ref.current;
+      if (!vid) return;
+      if (Math.abs(vid.currentTime - currentTime) > 0.5) {
+        try { vid.currentTime = currentTime; } catch(e) {}
+      }
+      if (isPlaying && vid.paused) {
+        vid.play().catch(() => {});
+      } else if (!isPlaying && !vid.paused) {
+        vid.pause();
+      }
+    });
+  }, [currentTime, isPlaying]);
 
   // ── RENDER 8-DIRECTIONAL TRANSFORM HANDLES (KHUNG VIỀN & 8 NÚM KÉO RỘNG KHUNG / CAO / GÓC) ──
   const renderTransformBox = (type, id, metrics) => {
@@ -596,6 +612,7 @@ export default function OpusCanvasPreview({
         {/* Blurred background duplicate for 'fit' mode */}
         {videoLayout === 'fit' && !activeBroll && (
           <video
+            ref={fitVideoRef}
             src={sourceVideoUrl || '/api/stream/source'}
             className="absolute inset-0 w-full h-full object-cover blur-xl scale-125 opacity-40 pointer-events-none"
             muted
@@ -606,6 +623,7 @@ export default function OpusCanvasPreview({
         {videoLayout === 'split' && !activeBroll && (
           <div className="absolute inset-x-0 bottom-0 h-1/2 overflow-hidden border-t-2 border-indigo-500">
             <video
+              ref={splitVideoRef}
               src={sourceVideoUrl || '/api/stream/source'}
               className="w-full h-full object-cover scale-x-[-1]"
               muted
@@ -939,10 +957,14 @@ export default function OpusCanvasPreview({
               {isSceneBlur && (
                 <div className="absolute inset-0 backdrop-blur-md bg-black/10" />
               )}
-              {/* 🖤 Hiệu ứng Fade Black duy trì xuyên suốt phân cảnh được chọn */}
-              {isSceneFadeBlack && (
-                <div className="absolute inset-0 bg-black" />
-              )}
+              {/* 🖤 BUG #9 FIX: Fade Black chỉ xuất hiện 0.4s ở đầu scene, không phủ toàn bộ */}
+              {isSceneFadeBlack && (() => {
+                const sceneStart = currentScene?.start_time || 0;
+                const elapsed = currentTime - sceneStart;
+                if (elapsed > 0.4) return null;
+                const opacity = Math.max(0, 1 - (elapsed / 0.4));
+                return <div className="absolute inset-0 bg-black transition-opacity" style={{ opacity }} />;
+              })()}
               {transitionTriggered && currentTransitionEffect === 'flash_white' && (
                 <div className="absolute inset-0 bg-white animate-fade-out" />
               )}
