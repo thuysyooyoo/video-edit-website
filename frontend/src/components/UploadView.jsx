@@ -27,6 +27,7 @@ import {
   Globe
 } from 'lucide-react';
 import { extractAudioFromMedia } from '../utils/browserAudioExtractor';
+import { transcribeWithWhisperWeb } from '../utils/whisperWebTranscriber';
 import { transcribeWithGeminiClient, DEFAULT_GEMINI_MODELS } from '../utils/geminiClientTranscriber';
 import { analyzeViralClipsClient } from '../utils/viralAnalyzerClient';
 import { saveMediaToIndexedDB } from '../utils/mediaStorage';
@@ -173,26 +174,24 @@ export default function UploadView({ onProcessSuccess, onBack, isProcessing: ext
     setProgressMsg('Đang khởi tạo trình xử lý Web Audio...');
 
     try {
-      // 1. Tách và hạ mẫu âm thanh 16kHz trong trình duyệt
+      // 1. Tách và giải mã sóng âm 16kHz PCM chuẩn xác trong trình duyệt
       const audioResult = await extractAudioFromMedia(targetFile, (pct, msg) => {
-        setProgressPct(Math.round(pct * 0.35)); // 0 - 35%
+        setProgressPct(Math.round(pct * 0.25)); // 0 - 25%
         setProgressMsg(msg);
       });
 
-      // 2. Bóc băng và gán timestamp từng từ với Gemini Cloud AI (Hỗ trợ Audio Chunks)
-      const transcript = await transcribeWithGeminiClient(
+      // 2. Bóc băng chuẩn sóng âm bằng mô hình AI Whisper Web (100% không dùng Gemini nghe âm thanh)
+      const transcript = await transcribeWithWhisperWeb(
         audioResult,
         audioResult.duration,
-        apiKey.trim(),
-        selectedModel,
         (pct, msg) => {
-          setProgressPct(35 + Math.round(pct * 0.45)); // 35 - 80%
+          setProgressPct(25 + Math.round(pct * 0.55)); // 25 - 80%
           setProgressMsg(msg);
         }
       );
 
-      setProgressPct(85);
-      setProgressMsg(processingMode === 'viral_ai' ? 'Đang phân tích 3 trụ cột (Hook - Problem - Solution) bằng AI...' : 'Đang phân tích kịch bản & tạo Tiêu Đề Hook bám sát nội dung...');
+      setProgressPct(82);
+      setProgressMsg(processingMode === 'viral_ai' ? 'Gemini AI đang phân tích 3 trụ cột (Hook - Problem - Solution)...' : 'Gemini AI đang đúc kết Tiêu Đề Hook 2 vế bám sát nội dung...');
 
       // 3. Phân tích kịch bản, tạo Tiêu Đề Hook và chia phân cảnh
       const blobUrl = URL.createObjectURL(targetFile);
