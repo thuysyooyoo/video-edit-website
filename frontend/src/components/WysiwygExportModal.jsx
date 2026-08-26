@@ -51,6 +51,20 @@ export default function WysiwygExportModal({
   const bgmAudioRef = useRef(null);
   const heartbeatIntervalRef = useRef(null);
   const isCapturingFrameRef = useRef(false);
+  const isSeekingSkipRef = useRef(false);
+
+  // Helper làm sạch tên tệp tin an toàn tuyệt đối trên Windows / macOS (xóa bỏ ký tự cấm : ? / \)
+  const sanitizeFileName = (rawTitle) => {
+    const cleanStr = (rawTitle || 'clip_video')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Chuyển tiếng Việt có dấu thành không dấu
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+      .toUpperCase();
+    return `OPUS_STUDIO_${cleanStr || 'CLIP'}_1080P.webm`;
+  };
 
   // Tính toán thời lượng chuẩn xác (không bị giới hạn 30s)
   const clipStart = clip?.start_time ?? 0;
@@ -232,10 +246,10 @@ export default function WysiwygExportModal({
         throw new Error('Canvas hoặc Video ref không khả dụng');
       }
 
-      // Khởi tạo Canvas Full HD 1080x1920
+      // Khởi tạo Canvas Full HD 1080x1920 với GPU Context tối ưu
       canvas.width = 1080;
       canvas.height = 1920;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { alpha: false });
 
       // Đặt nguồn video chuẩn (hỗ trợ cả Blob URL, Data URL, domain hiện tại)
       let effectiveVideoUrl = sourceVideoUrl || '/api/stream/source';
@@ -300,8 +314,20 @@ export default function WysiwygExportModal({
         video.onseeked = resolve;
       });
 
+      // Lắng nghe sự kiện seeked để mở khóa cờ nhảy cắt đoạn an toàn
+      video.addEventListener('seeked', () => {
+        isSeekingSkipRef.current = false;
+      });
+
       setStatus('recording');
-      setStatusMessage('Đang chụp khung hình trực tiếp từ Preview DOM chuẩn 1080x1920...');
+      setStatusMessage('Đang chụp khung hình trực tiếp từ Preview DOM chuẩn 1080x1920 (30 FPS)...');
+
+      // Đánh thức AudioContext nếu bị trình duyệt đưa về trạng thái suspended
+      if (audioCtx.state === 'suspended') {
+        try {
+          await audioCtx.resume();
+        } catch (e) {}
+      }
 
       const sourceNode = audioCtx.createMediaElementSource(video);
       const destNode = audioCtx.createMediaStreamDestination();
@@ -312,7 +338,7 @@ export default function WysiwygExportModal({
       sourceNode.connect(masterGain);
       masterGain.connect(destNode);
 
-      // Nối BGM nếu có
+      // Nối BGM nếu có (lặp vô tận & âm lượng êm dịu)
       if (selectedBgm && selectedBgm !== 'none') {
         try {
           const trackUrls = {
@@ -375,7 +401,7 @@ export default function WysiwygExportModal({
       // Bắt đầu phát video
       await video.play();
 
-      // Vòng lặp Render Khung Hình Siêu Ổn Định 60 FPS (Zero lag, Zero jitter)
+      // Vòng lặp Render Khung Hình Siêu Ổn Định 30 FPS (Zero lag, Zero jitter)
       const playedFxSet = new Set();
       let lastProgressVal = -1;
 
@@ -383,6 +409,17 @@ export default function WysiwygExportModal({
         if (isCancelledRef.current) return;
 
         const currT = video.currentTime;
+
+        // ⏭️ REAL-TIME SKIP INTERVALS (CẮT BỎ TOÀN BỘ TỪ GẠCH ĐỎ & KHOẢNG LẶNG ĐÃ XÓA)
+        if (skipIntervals && skipIntervals.length > 0 && !isSeekingSkipRef.current) {
+          for (const skip of skipIntervals) {
+            if (currT >= (skip.start - 0.02) && currT < (skip.end - 0.02)) {
+              isSeekingSkipRef.current = true;
+              video.currentTime = skip.end + 0.01;
+              return;
+            }
+          }
+        }
 
         // Kiểm tra kết thúc clip (chạy đủ toàn bộ thời lượng clip)
         if (currT >= clipEnd || video.ended) {
@@ -395,7 +432,7 @@ export default function WysiwygExportModal({
         }
 
         // Tự động hồi phục nếu video bị đứng ngoài ý muốn
-        if (video.paused && !video.ended && currT < clipEnd) {
+        if (video.paused && !video.ended && currT < clipEnd && !isSeekingSkipRef.current) {
           video.play().catch(() => {});
         }
 
@@ -531,7 +568,7 @@ export default function WysiwygExportModal({
             activeBrollConfig: activeBroll,
             zoomScale: microZoom.scale,
             titleConfig,
-            customTitle: customTitle || clip?.title || '',
+            customTitle: (customTitle && customTitle.trim()) ? customTitle.trim() : (clip?.title || ''),
             isTitleVisible: isTitleVis,
             brandConfig,
             logoImgElement: loadedLogoRef.current,
@@ -584,12 +621,10 @@ export default function WysiwygExportModal({
     try {
       setStatus('converting');
       setProgress(100);
-      setStatusMessage('Đang hoàn tất đóng gói video Full HD...');
+      setStatusMessage('Đang hoàn tất đóng gói video Full HD (30 FPS)...');
 
-      // BUG #10 FIX: MediaRecorder outputs WebM — use correct MIME type and extension
       const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-      const safeTitle = (customTitle || clip?.title || `clip_${clip?.id || 1}`).replace(/[^\w\s\-_]/gi, '').trim().replace(/\s+/g, '_');
-      const targetName = `WYSIWYG_HD_${safeTitle}.webm`;
+      const targetName = sanitizeFileName(customTitle || clip?.title);
 
       const videoUrl = URL.createObjectURL(blob);
       setFileName(targetName);
@@ -704,7 +739,7 @@ export default function WysiwygExportModal({
             </div>
             <div className="p-2 rounded-lg bg-[#181b28] border border-[#2c3147]">
               <div className="text-[10px] text-slate-400">Tốc Độ Khung Hình</div>
-              <div className="font-bold text-indigo-400 mt-0.5">60 FPS Smooth</div>
+              <div className="font-bold text-indigo-400 mt-0.5">30 FPS Smooth (Điện Ảnh)</div>
             </div>
           </div>
 

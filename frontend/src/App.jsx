@@ -2526,6 +2526,7 @@ export default function App() {
           setIsExporting={setIsExportingHd}
           totalDuration={data?.transcript?.duration || activeClip?.duration || 180}
           excludedWordIndices={excludedWordIndices}
+          speechEnhance={speechEnhance}
         />
 
         {/* ✨ Modal AI Sửa Chính Tả & Thuật Ngữ (1-to-1 Word Replacement) */}

@@ -600,7 +600,7 @@ export function drawTitleCard(ctx, titleConfig, customTitle, targetWidth = 1080,
  * 4. Vẽ Logo Thương Hiệu (Brand Logo)
  */
 export function drawBrandLogo(ctx, brandConfig, logoImgElement, targetWidth = 1080, targetHeight = 1920) {
-  if (!brandConfig || brandConfig.showLogo === false) return;
+  if (!brandConfig || brandConfig.showLogo !== true) return;
 
   const posX = (brandConfig.pos?.x ?? 82) / 100 * targetWidth;
   const posY = (brandConfig.pos?.y ?? 6) / 100 * targetHeight;
@@ -665,29 +665,33 @@ export function drawKaraokeCaptions(
   const posX = (captionConfig.pos?.x ?? 50) / 100 * targetWidth;
   const posY = (captionConfig.pos?.y ?? 84) / 100 * targetHeight;
   const scale = (captionConfig.scale ?? 100) / 100;
-  const fontFamily = fontStyle.fontFamily || 'Montserrat';
+  const rawFontFamily = fontStyle.fontFamily || 'Montserrat';
+  const cleanFontFamily = rawFontFamily.replace(/['"]/g, '');
+  const fontWeight = fontStyle.fontWeight || '900';
   const baseFontSize = (fontStyle.fontSize || 40) * 1.9 * scale;
   const textColor = fontStyle.textColor || '#ffffff';
   const highlightColor = fontStyle.highlightColor || '#22c55e';
   const effect = fontStyle.effect || captionConfig.effect || 'pop'; // 'pop' | 'pill' | 'glow'
-  const isUppercase = fontStyle.uppercase !== false;
-  // Chỉ hiển thị emoji khi người dùng BẬT tùy chọn aiEmoji
+  const isUppercase = fontStyle.isUppercase !== false && fontStyle.uppercase !== false;
   const showEmoji = fontStyle.aiEmoji === true || captionConfig.aiEmoji === true;
+  
+  // Xác định độ dày viền: nếu strokeWidth là 0 hoặc hasStroke=false thì tắt hoàn toàn viền đen
+  const rawStrokeWidth = fontStyle.strokeWidth !== undefined ? fontStyle.strokeWidth : (fontStyle.hasStroke === false ? 0 : 6);
+  const strokeColor = fontStyle.strokeColor || '#000000';
 
   ctx.save();
   ctx.translate(posX, posY);
 
-  ctx.font = `900 ${baseFontSize}px "${fontFamily}", "Be Vietnam Pro", "Inter", "Segoe UI", sans-serif`;
+  ctx.font = `${fontWeight} ${baseFontSize}px "${cleanFontFamily}", "Be Vietnam Pro", "Inter", "Segoe UI", sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  // Tính toán chiều rộng toàn bộ cụm từ để căn giữa (Center Alignment)
+  // Tính toán chiều rộng toàn bộ cụm từ để căn giữa & tự động co dãn chống tràn 2 mép
   const spaceWidth = ctx.measureText(' ').width;
   const wordMetrics = activePhrase.map(w => {
-    // Làm sạch từ để vẽ đẹp (giữ lại dấu tiếng Việt, loại bỏ ngoặc kép rác đầu cuối)
     let cleanWord = (w.word || '').trim().replace(/^["']+|["']+$/g, '');
     const rawText = isUppercase ? cleanWord.toUpperCase() : cleanWord;
-    const isCurrent = currentTime >= (w.start - 0.05) && currentTime <= (w.end + 0.05);
+    const isCurrent = currentTime >= (Number(w.start) - 0.05) && currentTime <= (Number(w.end) + 0.05);
     const emoji = (showEmoji && isCurrent) ? (w.emoji || getEmojiForWord(cleanWord)) : null;
     return {
       text: rawText,
@@ -697,8 +701,17 @@ export function drawKaraokeCaptions(
     };
   });
 
-  const totalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
-  let currX = -totalWidth / 2;
+  const rawTotalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
+  
+  // 📐 Thuật toán Auto-Fit Scale Down: Nếu cụm từ dài hơn 940px, tự động co chữ để không tràn mép màn hình
+  const maxAllowedWidth = targetWidth - 140;
+  const autoFitScale = rawTotalWidth > maxAllowedWidth ? Math.max(0.7, maxAllowedWidth / rawTotalWidth) : 1.0;
+  
+  if (autoFitScale < 1.0) {
+    ctx.scale(autoFitScale, autoFitScale);
+  }
+
+  let currX = -rawTotalWidth / 2;
 
   // Vẽ từng từ trong cụm từ
   for (const item of wordMetrics) {
@@ -722,11 +735,10 @@ export function drawKaraokeCaptions(
         ctx.shadowBlur = 16;
         ctx.shadowOffsetY = 4;
         drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 14);
-        ctx.fillStyle = fontStyle.pillBgColor || '#facc15'; // Nền vàng rực
+        ctx.fillStyle = fontStyle.pillBgColor || '#facc15';
         ctx.fill();
         ctx.restore();
 
-        // Chữ đen đậm bên trong hộp
         ctx.fillStyle = fontStyle.pillTextColor || '#000000';
         ctx.fillText(item.text, currX, 0);
 
@@ -739,29 +751,39 @@ export function drawKaraokeCaptions(
         ctx.shadowColor = fontStyle.glowColor || highlightColor || '#00f0ff';
         ctx.shadowBlur = 24;
 
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 10;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(item.text, currX, 0);
+        if (rawStrokeWidth > 0) {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = rawStrokeWidth * 1.4;
+          ctx.lineJoin = 'round';
+          ctx.strokeText(item.text, currX, 0);
+        }
 
         ctx.fillStyle = highlightColor || '#00f0ff';
         ctx.fillText(item.text, currX, 0);
 
       } else {
-        // 💥 Hiệu ứng Word-Pop (MrBeast Style): Phóng to 1.15x kèm viền đen dày và màu xanh lá
-        ctx.translate(wordCenterX, 0);
-        ctx.scale(1.15, 1.15);
-        ctx.translate(-wordCenterX, 0);
+        // 💥 Hiệu ứng Word-Pop / Mặc định (Tôn trọng fontStyle của người dùng)
+        const isHighlightActive = fontStyle.hasHighlight !== false;
+        
+        if (isHighlightActive) {
+          ctx.translate(wordCenterX, 0);
+          ctx.scale(1.12, 1.12);
+          ctx.translate(-wordCenterX, 0);
+        }
 
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 10;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(item.text, currX, 0);
+        if (rawStrokeWidth > 0) {
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = rawStrokeWidth * 1.3;
+          ctx.lineJoin = 'round';
+          ctx.strokeText(item.text, currX, 0);
+        }
 
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 18;
+        if (fontStyle.hasShadow !== false && rawStrokeWidth === 0) {
+          ctx.shadowColor = fontStyle.shadowColor || 'rgba(0, 0, 0, 0.7)';
+          ctx.shadowBlur = 10;
+        }
 
-        ctx.fillStyle = highlightColor || '#22c55e';
+        ctx.fillStyle = isHighlightActive ? highlightColor : textColor;
         ctx.fillText(item.text, currX, 0);
       }
 
@@ -779,13 +801,17 @@ export function drawKaraokeCaptions(
 
     } else {
       // ⚪ TỪ XUNG QUANH (INACTIVE WORDS)
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 8;
-      ctx.lineJoin = 'round';
-      ctx.strokeText(item.text, currX, 0);
+      if (rawStrokeWidth > 0) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = rawStrokeWidth * 1.1;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(item.text, currX, 0);
+      }
 
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-      ctx.shadowBlur = 10;
+      if (fontStyle.hasShadow !== false && rawStrokeWidth === 0) {
+        ctx.shadowColor = fontStyle.shadowColor || 'rgba(0, 0, 0, 0.6)';
+        ctx.shadowBlur = 8;
+      }
 
       ctx.fillStyle = textColor;
       ctx.fillText(item.text, currX, 0);
@@ -1285,7 +1311,7 @@ export function renderCompositedFrame(ctx, options = {}) {
       }
     },
     'layer_logo': () => {
-      if (brandConfig?.showLogo !== false) {
+      if (brandConfig && brandConfig.showLogo === true) {
         drawBrandLogo(ctx, brandConfig, logoImgElement, targetWidth, targetHeight);
       }
     }
