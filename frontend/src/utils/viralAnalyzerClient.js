@@ -1,7 +1,7 @@
 /**
  * 🎯 VIRAL ANALYZER & CLIP SPLITTER (100% Client-Side Pure JavaScript)
  * Phân tích kịch bản theo 3 trụ cột (Hook - Problem - Solution, 1-4 phút) bằng Gemini AI
- * Tự động tạo Tiêu Đề Hook cuốn hút bám sát nội dung lời thoại!
+ * Tự động tạo Tiêu Đề Hook 2 vế cuốn hút bám sát nội dung lời thoại!
  */
 
 const PROMPT_VIRAL_3_PILLARS = `
@@ -23,12 +23,14 @@ CẤU TRÚC 3 TRỤ CỘT CỦA MỖI CLIP VIRAL:
    - Đưa ra giải pháp dứt khoát, mẹo thực tế, bài học đắt giá hoặc kết luận đọng lại.
    - Nêu rõ Solution và chấm value_score (50 - 100).
 
-QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
-- Hãy trích xuất từ 3 đến 6 Clips độc lập trải đều trên toàn bộ chiều dài video (Clip 1 ở đoạn đầu, Clip 2 ở đoạn giữa, Clip 3 ở đoạn sau, Clip 4 ở đoạn cuối...).
-- BẮT BUỘC KHÔNG TRÙNG LẶP: Các clips PHẢI CÓ MỐC THỜI GIAN KHÁC NHAU (start_time và end_time của mỗi clip phải nằm ở các phân đoạn riêng biệt trong video). TUYỆT ĐỐI KHÔNG lấy cùng 1 khoảng thời gian hay cùng 1 nội dung cho nhiều clip.
+QUY TẮC TIÊU ĐỀ 'title' & THỜI LƯỢNG (CỰC KỲ NGHIÊM NGẶT):
+- TIÊU ĐỀ 'title' BẮT BUỘC CÓ CẤU TRÚC 2 VẾ (Ngăn cách bằng dấu hai chấm ":"):
+  + Vế 1 (Chủ đề / Đối tượng nóng, 2-4 từ) : Vế 2 (Bài học / Cảnh báo / Câu hỏi giật tít, 3-6 từ).
+  + Viết IN HOA TOÀN BỘ, dưới 45 ký tự.
+  + TUYỆT ĐỐI KHÔNG lấy nguyên câu thoại nói ngẫu nhiên trong bài. PHẢI TỰ ĐÚC KẾT TIÊU ĐỀ CÓ Ý NGHĨA TRỌN VẸN.
+  + Ví dụ: "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!" hoặc "TRA CỨU MÃ HS: 2 CÁCH NHANH NHẤT!" hoặc "DÂN XUẤT NHẬP KHẨU: ĐÃ BIẾT LUẬT MỚI CHƯA?".
 - Thời lượng mỗi clip: TỐI THIỂU 60 GIÂY (1 phút) và TỐI ĐA 240 GIÂY (4 phút). (Nếu video gốc ngắn hơn 60s, giữ toàn bộ video).
 - start_time & end_time: Cắt đúng đầu câu và cuối câu hoàn chỉnh của người nói.
-- Tiêu đề 'title': Viết hoa, giật tít cuốn hút bám sát đúng chủ đề riêng của từng đoạn, dưới 60 ký tự.
 
 ## DỮ LIỆU TRANSCRIPT:
 {transcript_text}
@@ -38,7 +40,7 @@ QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
   "clips": [
     {
       "id": 1,
-      "title": "TIÊU ĐỀ HOOK VIRAL GIẬT TÍT",
+      "title": "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!",
       "start_time": 0.0,
       "end_time": 120.0,
       "hook": "Câu mở đầu giật gân ấn tượng...",
@@ -59,7 +61,7 @@ const PROMPT_GENERATE_HOOK_TITLE = `
 Bạn là bậc thầy giật tít Video Viral triệu view (Hook Headline Master) trên TikTok, Reels và Shorts.
 Hãy đọc kỹ nội dung kịch bản và sáng tạo ra ĐÚNG 1 TIÊU ĐỀ HOOK đỉnh cao thuộc 1 trong 3 thể loại thu hút nhất:
 1. BÀI HỌC / BÍ QUYẾT ĐẮT GIÁ: Ví dụ "TRA CỨU MÃ HS: 2 CÁCH NHANH NHẤT!" hoặc "TỐI ƯU CHI PHÍ: TIẾT KIỆM 50% VẬN CHUYỂN!"
-2. CẢNH BÁO / RỦI RO CẦN TRÁNH: Ví dụ "MẶT HÀNG RỦI RO: TRÁNH BỊ PHẠT NẶNG!" hoặc "LỖI XUẤT KHẨU: 90% DOANH NGHIỆP MẮC PHẢI!"
+2. CẢNH BÁO / RỦI RO CẦN TRÁNH: Ví dụ "MẶT HÀNG RỦI RO: TRÁNH BỊ PHẠT NẶNG!" hoặc "DANH MỤC HÀNG HÓA: ĐIỀU DOANH NGHIỆP CẦN BIẾT!"
 3. CÂU HỎI TÒ MÒ / KÍCH THÍCH TƯ DUY: Ví dụ "DÂN XUẤT NHẬP KHẨU: ĐÃ BIẾT LUẬT MỚI CHƯA?" hoặc "CONTAINER ĐẦU TIÊN: RA ĐỜI THẾ NÀO?"
 
 - CẤU TRÚC BẮT BUỘC 2 VẾ (Ngăn cách bằng dấu hai chấm ":"):
@@ -94,27 +96,30 @@ function snapToWordBoundary(time, words, isEnd = false) {
 }
 
 /**
- * AI Sinh Tiêu Đề Hook Bám Sát Kịch Bản
+ * AI Sinh Tiêu Đề Hook 2 Vế Bám Sát Kịch Bản
  */
 export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.5-flash') {
-  if (!text) return "BÍ QUYẾT XUẤT NHẬP KHẨU VIRAL";
+  if (!text) return "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!";
   if (apiKey) {
     try {
-      const prompt = PROMPT_GENERATE_HOOK_TITLE.replace('{text}', text.slice(0, 1500));
+      const prompt = PROMPT_GENERATE_HOOK_TITLE.replace('{text}', text.slice(0, 2000));
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.6, maxOutputTokens: 60 }
+          generationConfig: { temperature: 0.5, maxOutputTokens: 60 }
         })
       });
       if (res.ok) {
         const data = await res.json();
         const rawTitle = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (rawTitle && rawTitle.length >= 8) {
-          return rawTitle.replace(/^["'`*#]+|["'`*#]+$/g, '').slice(0, 60).toUpperCase();
+        if (rawTitle && rawTitle.length >= 6) {
+          const cleanTitle = rawTitle.replace(/^["'`*#:\-\s]+|["'`*#:\-\s]+$/g, '').slice(0, 50).toUpperCase();
+          if (cleanTitle.length >= 6) {
+            return cleanTitle;
+          }
         }
       }
     } catch (e) {
@@ -122,14 +127,33 @@ export async function generateSmartHookTitle(text, apiKey, model = 'gemini-2.5-f
     }
   }
 
-  // Smart Context-Aware Fallback (Không bao giờ lấy câu cụt lủn)
-  const lower = text.toLowerCase();
-  if (lower.includes('thuế') || lower.includes('mặt hàng')) return "QUY ĐỊNH MỚI VỀ THUẾ & MẶT HÀNG RỦI RO";
-  if (lower.includes('hs') || lower.includes('mã')) return "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH RỦI RO";
-  if (lower.includes('phương thức') || lower.includes('kiểm tra')) return "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI";
-  if (lower.includes('container') || lower.includes('mclean') || lower.includes('tàu')) return "LỊCH SỬ CHIẾC CONTAINER & BÀI HỌC QUẢN TRỊ";
-  if (lower.includes('chi phí') || lower.includes('tối ưu')) return "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ";
-  return "BÍ QUYẾT XUẤT NHẬP KHẨU THỰC CHIẾN";
+  return getFallbackSmartTitle(text);
+}
+
+/**
+ * Bộ từ điển thông minh dự phòng (Đảm bảo luôn có tiêu đề 2 vế ý nghĩa chuẩn chuyên ngành)
+ */
+export function getFallbackSmartTitle(text = '') {
+  const lower = (text || '').toLowerCase();
+  if (lower.includes('thuế') || lower.includes('mặt hàng') || lower.includes('danh mục') || lower.includes('văn bản')) {
+    return "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!";
+  }
+  if (lower.includes('hs') || lower.includes('mã')) {
+    return "TRA CỨU MÃ HS: 2 CÁCH NHANH NHẤT!";
+  }
+  if (lower.includes('phương thức') || lower.includes('kiểm tra') || lower.includes('hải quan')) {
+    return "KIỂM TRA HÀNG HÓA: 2 PHƯƠNG THỨC MỚI!";
+  }
+  if (lower.includes('container') || lower.includes('mclean') || lower.includes('tàu') || lower.includes('cảng')) {
+    return "CONTAINER ĐẦU TIÊN: RA ĐỜI THẾ NÀO?";
+  }
+  if (lower.includes('chi phí') || lower.includes('tối ưu') || lower.includes('logistics') || lower.includes('vận chuyển')) {
+    return "TỐI ƯU CHI PHÍ: TIẾT KIỆM 50% LOGISTICS!";
+  }
+  if (lower.includes('rủi ro') || lower.includes('phạt') || lower.includes('lỗi')) {
+    return "MẶT HÀNG RỦI RO: TRÁNH BỊ PHẠT NẶNG!";
+  }
+  return "DÂN XUẤT NHẬP KHẨU: ĐÃ BIẾT ĐIỀU NÀY CHƯA?";
 }
 
 /**
@@ -146,11 +170,15 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
   // ══════════════════════════════════════════════════════════════════════════════
   if (processingMode === 'full' || totalDuration <= 60) {
     // 🧠 AI Sinh Tiêu Đề Hook bám sát nội dung cho toàn bộ video
-    let aiHookTitle = videoMetadata.title || 'TIÊU ĐỀ VIRAL CLIP';
+    let aiHookTitle = 'DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!';
     if (apiKey && fullText) {
       try {
         aiHookTitle = await generateSmartHookTitle(fullText, apiKey, model);
-      } catch (e) {}
+      } catch (e) {
+        aiHookTitle = getFallbackSmartTitle(fullText);
+      }
+    } else {
+      aiHookTitle = getFallbackSmartTitle(fullText);
     }
 
     // Tự động phân tách các phân cảnh ban đầu (mỗi 15s)
@@ -201,7 +229,6 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
   // ══════════════════════════════════════════════════════════════════════════════
   if (apiKey && fullText) {
     try {
-      // Định dạng kịch bản thành các đoạn có timestamp [MM:SS] để AI dễ dàng chia nhiều clip
       const transcriptParagraphs = [];
       const step = 25; // 25s
       for (let t = 0; t < totalDuration; t += step) {
@@ -218,34 +245,36 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
       }
       const formattedTranscript = transcriptParagraphs.join('\n\n');
 
-      const prompt = PROMPT_VIRAL_3_PILLARS.replace('{transcript_text}', formattedTranscript.slice(0, 16000));
+      const prompt = PROMPT_VIRAL_3_PILLARS.replace('{transcript_text}', formattedTranscript);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.5, maxOutputTokens: 6000 }
+          generationConfig: {
+            temperature: 0.4,
+            response_mime_type: "application/json"
+          }
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        let rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-        
-        if (rawText.startsWith('```json')) rawText = rawText.slice(7);
-        if (rawText.startsWith('```')) rawText = rawText.slice(3);
-        if (rawText.endsWith('```')) rawText = rawText.slice(0, -3);
-        rawText = rawText.trim();
+        const jsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parsed = JSON.parse(jsonStr || '{}');
 
-        const parsed = JSON.parse(rawText);
-        const aiClips = parsed.clips || [];
+        if (parsed.clips && Array.isArray(parsed.clips) && parsed.clips.length > 0) {
+          const calcGrade = (score) => {
+            if (score >= 95) return 'A+';
+            if (score >= 90) return 'A';
+            if (score >= 85) return 'B+';
+            if (score >= 80) return 'B';
+            return 'C+';
+          };
 
-        if (Array.isArray(aiClips) && aiClips.length > 0) {
-          const calcGrade = (s) => (s >= 92 ? 'A+' : s >= 85 ? 'A' : s >= 78 ? 'B+' : 'B');
-
-          return aiClips.map((c, idx) => {
+          return parsed.clips.map((c, idx) => {
             const rawSt = Math.max(0, parseFloat(c.start_time) || 0);
             const rawEt = Math.min(totalDuration, parseFloat(c.end_time) || (rawSt + 60));
             
@@ -270,7 +299,7 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
                 start_time: sStart,
                 end_time: hookEnd,
                 duration: Math.round((hookEnd - sStart) * 10) / 10,
-                transition: 'zoom_in' // Mở đầu bằng zoom_in tạo sự chú ý
+                transition: 'zoom_in'
               },
               {
                 id: `sc_c${idx}_prob`,
@@ -291,15 +320,10 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
             ];
 
             let clipTitle = (c.title || '').trim();
-            if (!clipTitle || clipTitle.toUpperCase().startsWith('CLIP VIRAL') || clipTitle.length < 6) {
+            // Nếu tiêu đề bị thiếu dấu 2 chấm hoặc quá ngắn, tạo lại bằng bộ sinh thông minh
+            if (!clipTitle || clipTitle.length < 6 || !clipTitle.includes(':')) {
               const clipSliceText = c.hook || (words.filter(w => w.start >= sStart && w.end <= sEnd).map(w => w.word).join(' '));
-              const lower = clipSliceText.toLowerCase();
-              if (lower.includes('thuế') || lower.includes('mặt hàng')) clipTitle = "QUY ĐỊNH MỚI VỀ THUẾ & MẶT HÀNG RỦI RO";
-              else if (lower.includes('hs') || lower.includes('mã')) clipTitle = "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH PHẠT";
-              else if (lower.includes('phương thức') || lower.includes('kiểm tra')) clipTitle = "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI";
-              else if (lower.includes('container') || lower.includes('mclean') || lower.includes('tàu')) clipTitle = "LỊCH SỬ CHIẾC CONTAINER & BÀI HỌC QUẢN TRỊ";
-              else if (lower.includes('chi phí') || lower.includes('tối ưu')) clipTitle = "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ";
-              else clipTitle = `BÍ QUYẾT XUẤT NHẬP KHẨU THỰC CHIẾN #${idx + 1}`;
+              clipTitle = getFallbackSmartTitle(clipSliceText);
             }
 
             return {
@@ -332,7 +356,7 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
     }
   }
 
-  // Fallback Heuristic: Sinh Tiêu Đề Hook bám sát nội dung kịch bản cho từng clip
+  // Fallback Heuristic: Sinh Tiêu Đề Hook 2 vế chuẩn cho từng clip (Tuyệt đối không lấy câu thoại đầu)
   const fallbackClips = [];
   const clipLength = Math.min(totalDuration, 90.0);
   const numClips = Math.max(1, Math.min(5, Math.ceil(totalDuration / clipLength)));
@@ -345,15 +369,7 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
     const clipWords = words.filter(w => w.start >= cStart && w.end <= cEnd);
     const clipText = clipWords.map(w => w.word).join(' ');
 
-    // Tạo tiêu đề Hook giật tít từ câu đầu của đoạn này
-    let smartTitle = '';
-    const firstSentence = clipText.split(/[.?!]/)[0] || '';
-    if (firstSentence.trim().length >= 8) {
-      smartTitle = firstSentence.trim().replace(/[.,!?\"']/g, '').slice(0, 55).toUpperCase();
-    } else {
-      smartTitle = clipWords.slice(0, 8).map(w => w.word).join(' ').replace(/[.,!?\"']/g, '').toUpperCase();
-    }
-    if (!smartTitle) smartTitle = `BÍ QUYẾT XUẤT NHẬP KHẨU #${i + 1}`;
+    const smartTitle = getFallbackSmartTitle(clipText);
 
     fallbackClips.push({
       id: i + 1,
@@ -393,4 +409,3 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
 
   return fallbackClips;
 }
-

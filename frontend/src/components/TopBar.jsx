@@ -22,7 +22,7 @@ import {
   Layers
 } from 'lucide-react';
 
-export default function TopBar({ 
+function TopBar({ 
   onSpeechCleanup, 
   speechEnhance = false,
   onToggleSpeechEnhance,
@@ -369,3 +369,5 @@ export default function TopBar({
     </header>
   );
 }
+
+export default React.memo(TopBar);

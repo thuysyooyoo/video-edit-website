@@ -48,7 +48,7 @@ import {
 import { VIRAL_FONTS } from '../utils/captionStyles';
 import AnimatedStickerItem, { ANIMATION_PRESETS } from './AnimatedStickerItem';
 
-export default function OpusRightSidebar({
+function OpusRightSidebar({
   activeTab = 'ai_enhance',
   setActiveTab,
   captionPreset,
@@ -3074,3 +3074,5 @@ export default function OpusRightSidebar({
     </div>
   );
 }
+
+export default React.memo(OpusRightSidebar);

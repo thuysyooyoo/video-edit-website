@@ -337,7 +337,7 @@ export default function WysiwygExportModal({
       }
 
       // Khởi tạo MediaStream kết hợp Video từ Canvas và Audio từ Web Audio API Destination
-      const canvasStream = canvas.captureStream(60); // 60 FPS mượt mà
+      const canvasStream = canvas.captureStream(30); // 30 FPS chuẩn video điện ảnh TikTok/Reels siêu mượt mà
       const combinedStream = new MediaStream([
         canvasStream.getVideoTracks()[0],
         destNode.stream.getAudioTracks()[0]
@@ -354,7 +354,7 @@ export default function WysiwygExportModal({
 
       const recorder = new MediaRecorder(combinedStream, {
         mimeType,
-        videoBitsPerSecond: 12000000 // 12 Mbps Full HD sắc nét
+        videoBitsPerSecond: 6000000 // 6 Mbps Full HD 1080x1920 siêu mượt mà, không drop frame
       });
 
       recordedChunksRef.current = [];

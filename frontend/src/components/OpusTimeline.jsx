@@ -18,7 +18,7 @@ import {
   Settings
 } from 'lucide-react';
 
-export default function OpusTimeline({
+function OpusTimeline({
   clip,
   currentTime,
   onSeek,
@@ -926,10 +926,10 @@ export default function OpusTimeline({
               })}
             </div>
 
-            {/* Playhead */}
+            {/* Playhead GPU Accelerated */}
             <div
               className="absolute top-0 bottom-0 w-[2px] bg-white z-40 pointer-events-none shadow-[0_0_12px_rgba(255,255,255,1)]"
-              style={{ left: `${progressPercent}%` }}
+              style={{ left: `${progressPercent}%`, willChange: 'left' }}
             >
               <div className="absolute -top-1 -left-[5px] w-3 h-4 rounded-sm bg-white text-black font-bold text-[8px] flex items-center justify-center shadow-lg border border-black/40">
                 ▼
@@ -966,3 +966,5 @@ export default function OpusTimeline({
     </div>
   );
 }
+
+export default React.memo(OpusTimeline);

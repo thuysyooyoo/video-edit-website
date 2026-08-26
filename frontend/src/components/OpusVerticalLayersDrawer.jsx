@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { ANIMATION_PRESETS } from './AnimatedStickerItem';
 
-export default function OpusVerticalLayersDrawer({
+function OpusVerticalLayersDrawer({
   isOpen = true,
   onClose,
   clipDuration = 30,
@@ -728,3 +728,5 @@ export default function OpusVerticalLayersDrawer({
     </div>
   );
 }
+
+export default React.memo(OpusVerticalLayersDrawer);
