@@ -1315,7 +1315,8 @@ export default function App() {
 
   const handleExtendEnd = (seconds = 5) => {
     if (!activeClip) return;
-    const maxDur = data?.transcript?.duration || 142.17;
+    // BUG #17 FIX: Use actual video duration instead of hardcoded test value
+    const maxDur = data?.transcript?.duration || videoRef.current?.duration || 600;
     const newEnd = Math.min(maxDur, activeClip.end_time + seconds);
     setActiveClip({
       ...activeClip,

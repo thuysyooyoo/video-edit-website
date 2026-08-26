@@ -282,6 +282,7 @@ export default function TopBar({
             onChange={(e) => setSelectedModel && setSelectedModel(e.target.value)}
             className="bg-transparent text-slate-300 text-[10px] font-bold px-1.5 py-1 focus:outline-none cursor-pointer hover:text-white"
           >
+            <option value="gemini-2.5-flash" className="bg-[#12131e] text-white">Gemini 2.5 Flash</option>
             <option value="gemini-3.5-flash-lite" className="bg-[#12131e] text-white">Gemini 3.5 Flash Lite</option>
             <option value="gemini-3.5-flash" className="bg-[#12131e] text-white">Gemini 3.5 Flash</option>
             <option value="gemini-3.7-flash" className="bg-[#12131e] text-white">Gemini 3.7 Flash</option>

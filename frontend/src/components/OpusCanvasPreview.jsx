@@ -253,7 +253,7 @@ export default function OpusCanvasPreview({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [activeDragging, activeResizing, onUpdateTitleConfig, onUpdateCaptionConfig, onUpdateCaptionPos, onUpdateBrandConfig, onUpdateTextLayer, onUpdateTextLayerPos, setFontStyle]);
+  }, [activeDragging, activeResizing, onUpdateTitleConfig, onUpdateCaptionConfig, onUpdateCaptionPos, onUpdateBrandConfig, onUpdateTextLayer, onUpdateTextLayerPos, setFontStyle, onUpdateAnimatedSticker]);
 
   const clipStart = clip?.start_time ?? 0;
   const clipEnd = clip?.end_time ?? 999999;
@@ -285,6 +285,11 @@ export default function OpusCanvasPreview({
       vid.addEventListener('loadedmetadata', applySeek, { once: true });
       vid.addEventListener('canplay', applySeek, { once: true });
     }
+    // BUG #13 FIX: Cleanup listeners on unmount or clip change
+    return () => {
+      vid.removeEventListener('loadedmetadata', applySeek);
+      vid.removeEventListener('canplay', applySeek);
+    };
   }, [clip?.id, clip?.start_time, sourceVideoUrl]);
 
   // Trigger transition effect on scene change or seek

@@ -240,13 +240,7 @@ export default function DashboardView({
         )}
       </main>
 
-      {/* Floating Questions button bottom-right like Opus Clip */}
-      <div className="fixed bottom-4 right-6 z-30">
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181a26] border border-[#2d3247] text-slate-300 hover:text-white text-xs font-semibold shadow-xl transition-all">
-          <HelpCircle className="w-3.5 h-3.5 text-brand-glow" />
-          <span>Questions?</span>
-        </button>
-      </div>
+
     </div>
   );
 }
