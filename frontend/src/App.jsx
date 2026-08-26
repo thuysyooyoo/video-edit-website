@@ -361,7 +361,8 @@ export default function App() {
 
   // 🎧 Web Audio API Real-time Speech Noise Filter & Studio Noise Gate (Triệt tiêu 100% ồn nền khi ngắt giọng)
   useEffect(() => {
-    if (!videoRef.current) return;
+    // BUG #1 FIX: Only init audio graph when in editor view and video element is mounted
+    if (currentView !== 'editor' || !videoRef.current) return;
     
     const setupAudioGraph = () => {
       try {
@@ -502,7 +503,7 @@ export default function App() {
     };
 
     videoRef.current.addEventListener('play', setupAudioGraph, { once: true });
-  }, []);
+  }, [currentView]);
 
   // Update audio filter gains on toggle
   useEffect(() => {
@@ -2133,6 +2134,7 @@ export default function App() {
                 onCancelPlaceText={handleCancelPlaceText}
                 layerOrder={layerOrder}
                 isExporting={isExportingHd}
+                excludedWordIndices={excludedWordIndices}
               />
             </div>
 

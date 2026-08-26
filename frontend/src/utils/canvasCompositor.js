@@ -1252,8 +1252,14 @@ export function renderCompositedFrame(ctx, options = {}) {
       }
     },
     'layer_captions': () => {
-      const clipWords = (words || []).filter(w => w.start >= (clipStartTime - 0.2) && w.end <= (clipStartTime + (options.clipDuration || 999999) + 0.5));
-      drawKaraokeCaptions(ctx, clipWords.length > 0 ? clipWords : words, captionConfig || {}, fontStyle || {}, currentTime, targetWidth, targetHeight);
+      // BUG #2 + #4 FIX: Filter excluded words, no fallback to full words[]
+      const excludedSet = options.excludedWordIndices || new Set();
+      const clipEndTime = clipStartTime + (options.clipDuration || 999999);
+      const clipWords = (words || []).filter((w, idx) => {
+        if (excludedSet.has(idx)) return false;
+        return w.start >= (clipStartTime - 0.2) && w.end <= (clipEndTime + 0.5);
+      });
+      drawKaraokeCaptions(ctx, clipWords, captionConfig || {}, fontStyle || {}, currentTime, targetWidth, targetHeight);
     },
     'layer_title': () => {
       if (isTitleVisible && titleConfig?.visible !== false) {

@@ -30,14 +30,14 @@ export default function DashboardView({
   const [disableHeadline, setDisableHeadline] = useState(false);
 
   const filteredClips = clips.filter(c => 
-    c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.summary && c.summary.toLowerCase().includes(searchQuery.toLowerCase()))
+    (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.summary || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatDuration = (secs) => {
     const mins = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
-    return `00:00 ${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (

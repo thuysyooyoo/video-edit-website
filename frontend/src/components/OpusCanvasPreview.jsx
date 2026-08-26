@@ -76,7 +76,8 @@ export default function OpusCanvasPreview({
   onPlaceTextAtPos,
   onCancelPlaceText,
   layerOrder = [],
-  isExporting = false
+  isExporting = false,
+  excludedWordIndices = new Set()
 }) {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(customTitle || clip?.title || '');
@@ -254,8 +255,13 @@ export default function OpusCanvasPreview({
 
   const clipStart = clip?.start_time ?? 0;
   const clipEnd = clip?.end_time ?? 999999;
-  const clipScopedWords = (words || []).filter(w => !clip || (w.start >= (clipStart - 0.2) && w.end <= (clipEnd + 0.5)));
-  const currentKaraokeGroup = getKaraokePhraseGroup(clipScopedWords.length > 0 ? clipScopedWords : words, currentTime, 5);
+  // BUG #2 FIX: Filter excluded words from canvas subtitles
+  // BUG #4 FIX: No fallback to full words[] when scope is empty — silence means no subtitles
+  const clipScopedWords = (words || []).filter((w, idx) => {
+    if (excludedWordIndices && excludedWordIndices.has(idx)) return false;
+    return !clip || (w.start >= (clipStart - 0.2) && w.end <= (clipEnd + 0.5));
+  });
+  const currentKaraokeGroup = getKaraokePhraseGroup(clipScopedWords, currentTime, 5);
   const activePhrase = currentKaraokeGroup?.words || [];
 
   // 🎥 Tự động định vị con trỏ video và nạp ngay khung hình đầu tiên của clip khi mở Studio (Chống màn hình đen)
@@ -335,7 +341,8 @@ export default function OpusCanvasPreview({
 
   const handleSavePhraseEdit = (newText) => {
     if (editingPhraseModal && onEditPhraseText && newText.trim()) {
-      const matchIndices = editingPhraseModal.words.map(w => words.findIndex(item => item === w)).filter(idx => idx !== -1);
+      // BUG #3 FIX: Use clipScopedWords for index matching (same coordinate system as App.jsx)
+      const matchIndices = editingPhraseModal.words.map(w => clipScopedWords.findIndex(item => item === w)).filter(idx => idx !== -1);
       if (matchIndices.length > 0) {
         onEditPhraseText(matchIndices, newText.trim());
       }
