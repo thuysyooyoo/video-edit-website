@@ -13,6 +13,7 @@ import AICopilotDrawer from './components/AICopilotDrawer';
 import WysiwygExportModal from './components/WysiwygExportModal';
 import ProjectsLibraryModal from './components/ProjectsLibraryModal';
 import OpusVerticalLayersDrawer from './components/OpusVerticalLayersDrawer';
+import OpusSpellCheckModal from './components/OpusSpellCheckModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import { toPng } from 'html-to-image';
 import { RefreshCw } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function App() {
   const [isExportingHd, setIsExportingHd] = useState(false);
   const [isWysiwygModalOpen, setIsWysiwygModalOpen] = useState(false);
   const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
+  const [isSpellCheckModalOpen, setIsSpellCheckModalOpen] = useState(false);
 
   // AI Copilot Drawer State & Selected Model (Phiên 4)
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
@@ -359,10 +361,9 @@ export default function App() {
   const audioContextRef = useRef(null);
   const audioNodesRef = useRef(null);
 
-  // 🎧 Web Audio API Real-time Speech Noise Filter & Studio Noise Gate (Triệt tiêu 100% ồn nền khi ngắt giọng)
+  // 🎧 Web Audio API Studio Speech Enhancement Engine (Studio Quality DSP)
   useEffect(() => {
-    // BUG #1 FIX: Only init audio graph when in editor view and video element is mounted
-    if (currentView !== 'editor' || !videoRef.current) return;
+    if (!videoRef.current) return;
     
     const setupAudioGraph = () => {
       try {
@@ -370,66 +371,69 @@ export default function App() {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
           if (!AudioContext) return;
           const ctx = new AudioContext();
-          const source = ctx.createMediaElementSource(videoRef.current);
           
-          // 1. Cascaded 24dB/oct High-Pass Filters (Triệt tiêu toàn bộ tiếng ầm rì, rung máy, gió dưới 110Hz)
-          const highPass1 = ctx.createBiquadFilter();
-          highPass1.type = 'highpass';
-          highPass1.frequency.value = 110;
-          highPass1.Q.value = 0.707;
-
-          const highPass2 = ctx.createBiquadFilter();
-          highPass2.type = 'highpass';
-          highPass2.frequency.value = 110;
-          highPass2.Q.value = 0.707;
+          // 🛡️ Kết nối an toàn nguồn video MediaElement
+          let source = null;
+          try {
+            source = ctx.createMediaElementSource(videoRef.current);
+          } catch(e) {
+            console.warn("createMediaElementSource already attached:", e);
+            return;
+          }
+          
+          // 1. Smooth High-Pass Filter (Cắt tần số ù rì dưới 75Hz, bảo toàn độ ấm/dày của giọng nói)
+          const highPass = ctx.createBiquadFilter();
+          highPass.type = 'highpass';
+          highPass.frequency.value = 75;
+          highPass.Q.value = 0.707;
 
           // 2. Notch Filters (Triệt tiêu tiếng ù điện xoay chiều 50Hz, 60Hz)
           const notch50 = ctx.createBiquadFilter();
           notch50.type = 'notch';
           notch50.frequency.value = 50;
-          notch50.Q.value = 10;
+          notch50.Q.value = 8;
 
           const notch60 = ctx.createBiquadFilter();
           notch60.type = 'notch';
           notch60.frequency.value = 60;
-          notch60.Q.value = 10;
+          notch60.Q.value = 8;
 
-          // 3. Cascaded 24dB/oct Low-Pass Filters (Cắt bỏ tiếng rít cao tần, quạt gió trên 6800Hz)
-          const lowPass1 = ctx.createBiquadFilter();
-          lowPass1.type = 'lowpass';
-          lowPass1.frequency.value = 6800;
-          lowPass1.Q.value = 0.707;
+          // 3. Smooth Low-Pass Filter (Cắt tiếng rít chói trên 11,500Hz, giữ nguyên độ trong trẻo và hơi thở)
+          const lowPass = ctx.createBiquadFilter();
+          lowPass.type = 'lowpass';
+          lowPass.frequency.value = 11500;
+          lowPass.Q.value = 0.707;
 
-          const lowPass2 = ctx.createBiquadFilter();
-          lowPass2.type = 'lowpass';
-          lowPass2.frequency.value = 6800;
-          lowPass2.Q.value = 0.707;
-
-          // 4. Vocal Formant Peaking Boosts (Làm ấm và rõ âm thoại tiếng Việt)
+          // 4. Vocal Formant Presence (Làm nổi bật âm thoại tiếng Việt tự nhiên)
           const vocalPresence = ctx.createBiquadFilter();
           vocalPresence.type = 'peaking';
-          vocalPresence.frequency.value = 3000;
-          vocalPresence.Q.value = 1.4;
-          vocalPresence.gain.value = 6.0;
+          vocalPresence.frequency.value = 2800;
+          vocalPresence.Q.value = 1.2;
+          vocalPresence.gain.value = 2.5; // +2.5dB
 
           const vocalWarmth = ctx.createBiquadFilter();
           vocalWarmth.type = 'peaking';
-          vocalWarmth.frequency.value = 1200;
+          vocalWarmth.frequency.value = 1000;
           vocalWarmth.Q.value = 1.0;
-          vocalWarmth.gain.value = 2.5;
+          vocalWarmth.gain.value = 1.5; // +1.5dB
 
-          // 5. Dynamics Compressor (Cân bằng dải động âm lượng)
+          // 5. Broadcast Compressor (Nén dải động cân bằng, tự nhiên)
           const compressor = ctx.createDynamicsCompressor();
-          compressor.threshold.value = -22;
-          compressor.knee.value = 25;
-          compressor.ratio.value = 5;
-          compressor.attack.value = 0.003;
-          compressor.release.value = 0.20;
+          compressor.threshold.value = -16;
+          compressor.knee.value = 20;
+          compressor.ratio.value = 2.5;
+          compressor.attack.value = 0.005;
+          compressor.release.value = 0.15;
 
-          // 6. Real-time Studio Noise Gate Node & Analyser (Tự động ngắt tiếng xì xào khi ngừng nói)
+          // 6. 🔊 Makeup Gain (+5.1dB bù âm lượng chuẩn Studio sau khi nén)
+          const makeupGain = ctx.createGain();
+          makeupGain.gain.value = 1.8;
+
+          // 7. Studio Noise Gate Node (Ngắt ồn thông minh khi ngừng nói)
           const gateGain = ctx.createGain();
           gateGain.gain.value = 1.0;
 
+          // 👁️ MẮT THẦN ANALYSER ĐẶT TRƯỚC GATE (Đo trực tiếp tín hiệu micro gốc, chống kẹt ngắt âm)
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 512;
           const pcmData = new Float32Array(analyser.fftSize);
@@ -445,16 +449,16 @@ export default function App() {
               const rms = Math.sqrt(sum / pcmData.length);
               const db = 20 * Math.log10(Math.max(1e-5, rms));
 
-              // Nếu âm lượng < -40dB (khoảng nghỉ/chỉ có tiếng ồn nền) -> Đóng cổng ngắt sạch 98% tạp âm
-              if (db < -40) {
+              // Nếu âm lượng < -42dB (khoảng nghỉ) -> Giảm nhẹ tiếng ồn nền xuống 0.08 (-22dB)
+              if (db < -42) {
                 if (isGateOpen) {
                   isGateOpen = false;
-                  gateGain.gain.setTargetAtTime(0.015, ctx.currentTime, 0.04);
+                  gateGain.gain.setTargetAtTime(0.08, ctx.currentTime, 0.03);
                 }
-              } else if (db >= -36) { // Khi người nói cất giọng -> Mở cổng tức thì
+              } else if (db >= -38) { // Khi người nói cất giọng -> Mở cổng 100%
                 if (!isGateOpen) {
                   isGateOpen = true;
-                  gateGain.gain.setTargetAtTime(1.15, ctx.currentTime, 0.008);
+                  gateGain.gain.setTargetAtTime(1.0, ctx.currentTime, 0.005);
                 }
               }
             }
@@ -466,26 +470,27 @@ export default function App() {
           const bypassGain = ctx.createGain();
           const effectGain = ctx.createGain();
 
-          // Bypass path
+          // Bypass path (Nguyên bản 100%)
           source.connect(bypassGain);
           bypassGain.connect(ctx.destination);
 
-          // Processed path with Studio Noise Gate
-          source.connect(highPass1);
-          highPass1.connect(highPass2);
-          highPass2.connect(notch50);
+          // Analyser đo sóng âm trực tiếp từ nguồn
+          source.connect(analyser);
+
+          // Processed path với Makeup Gain và Noise Gate
+          source.connect(highPass);
+          highPass.connect(notch50);
           notch50.connect(notch60);
-          notch60.connect(lowPass1);
-          lowPass1.connect(lowPass2);
-          lowPass2.connect(vocalPresence);
+          notch60.connect(lowPass);
+          lowPass.connect(vocalPresence);
           vocalPresence.connect(vocalWarmth);
           vocalWarmth.connect(compressor);
-          compressor.connect(gateGain);
-          gateGain.connect(analyser);
-          analyser.connect(effectGain);
+          compressor.connect(makeupGain);
+          makeupGain.connect(gateGain);
+          gateGain.connect(effectGain);
           effectGain.connect(ctx.destination);
 
-          // Initial gains based on speechEnhance
+          // Thiết lập Gain ban đầu
           if (speechEnhance) {
             bypassGain.gain.value = 0;
             effectGain.gain.value = 1;
@@ -503,14 +508,6 @@ export default function App() {
     };
 
     videoRef.current.addEventListener('play', setupAudioGraph, { once: true });
-    // BUG #22 FIX: Cleanup AudioContext when leaving editor view
-    return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        try { audioContextRef.current.close(); } catch(e) {}
-        audioContextRef.current = null;
-        audioNodesRef.current = null;
-      }
-    };
   }, [currentView]);
 
   // Update audio filter gains on toggle
@@ -822,21 +819,33 @@ export default function App() {
     return count;
   }, [currentClipWords]);
 
-  // Detected Pauses & Pauses List
+  // Detected Pauses & Pauses List with 80ms Acoustic Cushion (Đệm âm thanh bảo toàn giọng nói)
   const detectedPausesList = useMemo(() => {
     const list = [];
     let pCount = 0;
+    const PADDING_SEC = 0.08; // 80ms đệm an toàn ở cả 2 đầu khoảng lặng
+
     for (let i = 1; i < currentClipWords.length; i++) {
       const prev = currentClipWords[i - 1];
       const curr = currentClipWords[i];
       const gap = curr.start - prev.end;
+      
+      // Chỉ tính là khoảng lặng có thể cắt nếu khoảng cách >= (pauseThreshold) và sau khi trừ đệm vẫn còn ít nhất 100ms
       if (gap >= pauseThreshold) {
-        list.push({
-          index: pCount++,
-          start: prev.end,
-          end: curr.start,
-          duration: gap
-        });
+        const cutStart = Math.round((prev.end + PADDING_SEC) * 100) / 100;
+        const cutEnd = Math.round((curr.start - PADDING_SEC) * 100) / 100;
+        
+        if (cutEnd - cutStart >= 0.10) {
+          list.push({
+            index: pCount++,
+            id: `pause_${prev.end.toFixed(2)}_${curr.start.toFixed(2)}`,
+            rawStart: prev.end,
+            rawEnd: curr.start,
+            cutStart: cutStart,
+            cutEnd: cutEnd,
+            duration: gap
+          });
+        }
       }
     }
     return list;
@@ -844,7 +853,7 @@ export default function App() {
 
   const detectedPausesCount = detectedPausesList.length;
 
-  // Real-time Skip Intervals (Tự động xóa cả từ và khoảng trắng/lặng phía sau từ bị gạch bỏ)
+  // Real-time Skip Intervals (Chính xác từng tích tắc sóng âm, không lẹm tiếng)
   const skipIntervals = useMemo(() => {
     if (!currentClipWords.length) return [];
     
@@ -854,7 +863,7 @@ export default function App() {
       
     const intervals = [];
 
-    // Gom cụm các từ bị xóa liền kề và lấy mốc kết thúc đến đầu từ tiếp theo được giữ lại
+    // Gom cụm các từ bị xóa liền kề (giới hạn đúng phạm vi từ đó, không nuốt khoảng lặng sau đó)
     if (excludedList.length > 0) {
       let chunkStartIdx = excludedList[0];
       let chunkEndIdx = excludedList[0];
@@ -863,41 +872,33 @@ export default function App() {
         if (excludedList[i] === chunkEndIdx + 1) {
           chunkEndIdx = excludedList[i];
         } else {
-          const start = currentClipWords[chunkStartIdx].start;
-          const nextIncludedIdx = chunkEndIdx + 1;
-          const end = nextIncludedIdx < currentClipWords.length
-            ? currentClipWords[nextIncludedIdx].start
-            : currentClipWords[chunkEndIdx].end + 0.3;
-
+          const start = Math.max(0, currentClipWords[chunkStartIdx].start - 0.02);
+          const end = currentClipWords[chunkEndIdx].end + 0.04;
           intervals.push({ start, end });
           chunkStartIdx = excludedList[i];
           chunkEndIdx = excludedList[i];
         }
       }
 
-      const start = currentClipWords[chunkStartIdx].start;
-      const nextIncludedIdx = chunkEndIdx + 1;
-      const end = nextIncludedIdx < currentClipWords.length
-        ? currentClipWords[nextIncludedIdx].start
-        : currentClipWords[chunkEndIdx].end + 0.3;
-
+      const start = Math.max(0, currentClipWords[chunkStartIdx].start - 0.02);
+      const end = currentClipWords[chunkEndIdx].end + 0.04;
       intervals.push({ start, end });
     }
 
-    // Khoảng lặng explicit do người dùng chủ động bấm gạch bỏ
+    // Khoảng lặng explicit do người dùng chủ động bấm gạch bỏ (áp dụng đệm an toàn 80ms)
     if (excludedPauseIndices && excludedPauseIndices.size > 0) {
       excludedPauseIndices.forEach((pIdx) => {
         const targetPause = detectedPausesList.find(p => p.index === pIdx);
         if (targetPause) {
           intervals.push({
-            start: targetPause.start,
-            end: targetPause.end
+            start: targetPause.cutStart,
+            end: targetPause.cutEnd
           });
         }
       });
     }
 
-    // Merge các khoảng nhảy gối nhau
+    // Merge các khoảng nhảy gối nhau (ngưỡng 0.005s để không nuốt các từ ngắn hợp lệ)
     intervals.sort((a, b) => a.start - b.start);
     const merged = [];
     intervals.forEach(curr => {
@@ -905,7 +906,7 @@ export default function App() {
         merged.push({ ...curr });
       } else {
         const last = merged[merged.length - 1];
-        if (curr.start <= last.end + 0.05) {
+        if (curr.start <= last.end + 0.005) {
           last.end = Math.max(last.end, curr.end);
         } else {
           merged.push({ ...curr });
@@ -1017,13 +1018,13 @@ export default function App() {
     }
   };
 
-  // Live Sound Effects & Real-Time Skip Engine
+  // Live Sound Effects & Real-Time Skip Engine (Không nhảy sớm, không đáp trễ)
   const handleTimeUpdate = (time) => {
     for (const skip of skipIntervals) {
-      if (time >= skip.start - 0.05 && time < skip.end) {
+      if (time >= skip.start && time < skip.end) {
         if (videoRef.current) {
-          videoRef.current.currentTime = skip.end + 0.03;
-          setCurrentTime(skip.end + 0.03);
+          videoRef.current.currentTime = skip.end;
+          setCurrentTime(skip.end);
         }
         return;
       }
@@ -1388,6 +1389,72 @@ export default function App() {
       next.add(p.index);
     });
     setExcludedPauseIndices(next);
+  };
+
+  // ✨ Áp dụng các từ đã sửa từ AI Spell Checker (Bảo toàn 100% mốc thời gian sóng âm gốc)
+  const handleApplySpellCorrections = (acceptedCorrections = []) => {
+    if (!acceptedCorrections || acceptedCorrections.length === 0 || !data?.transcript?.words) return;
+    pushStateToHistory();
+
+    const newWords = [...data.transcript.words];
+    let changedCount = 0;
+
+    for (const item of acceptedCorrections) {
+      const sIdx = item.startIndex;
+      const eIdx = item.endIndex;
+      const targetText = (item.customText || item.suggestedText || '').trim();
+      if (!targetText) continue;
+
+      const tokens = targetText.split(/\s+/).filter(Boolean);
+      const spanCount = Math.max(1, eIdx - sIdx + 1);
+
+      if (tokens.length === spanCount) {
+        // Thay thế 1-to-1 từng từ giữ nguyên start, end
+        for (let i = 0; i < spanCount; i++) {
+          const wIdx = sIdx + i;
+          if (wIdx < newWords.length && newWords[wIdx]) {
+            newWords[wIdx] = {
+              ...newWords[wIdx],
+              word: tokens[i]
+            };
+            changedCount++;
+          }
+        }
+      } else if (spanCount === 1) {
+        // 1 từ gốc thay bằng 1 token
+        if (sIdx < newWords.length && newWords[sIdx]) {
+          newWords[sIdx] = {
+            ...newWords[sIdx],
+            word: tokens[0] || targetText
+          };
+          changedCount++;
+        }
+      } else {
+        // Nếu số lượng token khác spanCount, phân bổ cho các slot
+        for (let i = 0; i < spanCount; i++) {
+          const wIdx = sIdx + i;
+          if (wIdx < newWords.length && newWords[wIdx]) {
+            newWords[wIdx] = {
+              ...newWords[wIdx],
+              word: tokens[i] || (i === 0 ? targetText : '')
+            };
+            changedCount++;
+          }
+        }
+      }
+    }
+
+    if (changedCount > 0) {
+      const updatedFullText = newWords.map(w => w.word).filter(Boolean).join(' ');
+      setData(prev => ({
+        ...prev,
+        transcript: {
+          ...prev.transcript,
+          words: newWords,
+          full_text: updatedFullText
+        }
+      }));
+    }
   };
 
   const handleAddTextLayer = (title, style = 'plain', options = {}) => {
@@ -2090,6 +2157,7 @@ export default function App() {
                 highlightKeywords={highlightKeywords}
                 pauseThreshold={pauseThreshold}
                 activeCleanupMode={activeCleanupMode}
+                onOpenSpellCheck={() => setIsSpellCheckModalOpen(true)}
               />
             </div>
 
@@ -2230,6 +2298,7 @@ export default function App() {
                 detectedPausesCount={detectedPausesCount}
                 activeCleanupMode={activeCleanupMode}
                 setActiveCleanupMode={setActiveCleanupMode}
+                onOpenSpellCheck={() => setIsSpellCheckModalOpen(true)}
                 onOpenBrollPicker={handleOpenBrollPicker}
                 onOpenSoundFxPicker={handleOpenSoundFxPicker}
                 onInsertSoundFx={handleSelectSoundFx}
@@ -2455,6 +2524,17 @@ export default function App() {
           setIsExporting={setIsExportingHd}
           totalDuration={data?.transcript?.duration || activeClip?.duration || 180}
           excludedWordIndices={excludedWordIndices}
+        />
+
+        {/* ✨ Modal AI Sửa Chính Tả & Thuật Ngữ (1-to-1 Word Replacement) */}
+        <OpusSpellCheckModal
+          isOpen={isSpellCheckModalOpen}
+          onClose={() => setIsSpellCheckModalOpen(false)}
+          words={data?.transcript?.words || []}
+          onApplyCorrections={handleApplySpellCorrections}
+          apiKey={localStorage.getItem('opus_gemini_api_key') || ''}
+          selectedModel={selectedModel}
+          onSeekWord={handleSeek}
         />
       </ErrorBoundary>
     </div>

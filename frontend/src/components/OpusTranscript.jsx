@@ -36,7 +36,8 @@ export default function OpusTranscript({
   onTogglePause,
   highlightKeywords = true,
   pauseThreshold = 0.35,
-  activeCleanupMode = null
+  activeCleanupMode = null,
+  onOpenSpellCheck
 }) {
   const containerRef = useRef(null);
   
@@ -266,6 +267,17 @@ export default function OpusTranscript({
               </button>
             )}
           </div>
+
+          {onOpenSpellCheck && (
+            <button
+              onClick={onOpenSpellCheck}
+              title="✨ AI Sửa Chính Tả & Thuật Ngữ (1-to-1 Word Replacement)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 fill-current text-yellow-300" />
+              <span className="hidden sm:inline">AI Sửa Chính Tả</span>
+            </button>
+          )}
 
           {searchQuery.trim() && (
             <span className="text-[11px] font-mono text-indigo-400 shrink-0 font-semibold">

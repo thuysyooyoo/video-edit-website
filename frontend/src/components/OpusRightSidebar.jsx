@@ -94,6 +94,7 @@ export default function OpusRightSidebar({
   detectedPausesCount,
   activeCleanupMode,
   setActiveCleanupMode,
+  onOpenSpellCheck,
   // Manual B-Roll / Audio / Text / Transition callbacks
   onOpenBrollPicker,
   onOpenSoundFxPicker,
@@ -629,6 +630,22 @@ export default function OpusRightSidebar({
                       {detectedPausesCount}
                     </span>
                   </button>
+
+                  {/* ✨ Nút AI Sửa Chính Tả (1-to-1 Word Replacement) */}
+                  {onOpenSpellCheck && (
+                    <button 
+                      onClick={onOpenSpellCheck}
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-indigo-950/60 to-purple-950/60 hover:from-indigo-900/80 hover:to-purple-900/80 border border-indigo-500/40 text-left text-xs font-semibold text-indigo-200 hover:text-white transition-all group shadow-sm"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-4 h-4 text-yellow-300 fill-current group-hover:scale-110 transition-transform" />
+                        <span className="font-bold text-white">AI Sửa Chính Tả & Thuật Ngữ</span>
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
+                        1-to-1 Fix
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="h-[1px] bg-[#222538] my-2" />

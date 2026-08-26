@@ -289,9 +289,15 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
             ];
 
             let clipTitle = (c.title || '').trim();
-            if (!clipTitle || clipTitle.toUpperCase().startsWith('CLIP VIRAL')) {
-              const clipSliceText = c.hook || (words.filter(w => w.start >= sStart && w.end <= sEnd).map(w => w.word).slice(0, 10).join(' '));
-              clipTitle = clipSliceText ? clipSliceText.replace(/[.,!?\"']/g, '').slice(0, 50).toUpperCase() : `CÂU CHUYỆN VIRAL #${idx + 1}`;
+            if (!clipTitle || clipTitle.toUpperCase().startsWith('CLIP VIRAL') || clipTitle.length < 6) {
+              const clipSliceText = c.hook || (words.filter(w => w.start >= sStart && w.end <= sEnd).map(w => w.word).join(' '));
+              const lower = clipSliceText.toLowerCase();
+              if (lower.includes('thuế') || lower.includes('mặt hàng')) clipTitle = "QUY ĐỊNH MỚI VỀ THUẾ & MẶT HÀNG RỦI RO";
+              else if (lower.includes('hs') || lower.includes('mã')) clipTitle = "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH PHẠT";
+              else if (lower.includes('phương thức') || lower.includes('kiểm tra')) clipTitle = "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI";
+              else if (lower.includes('container') || lower.includes('mclean') || lower.includes('tàu')) clipTitle = "LỊCH SỬ CHIẾC CONTAINER & BÀI HỌC QUẢN TRỊ";
+              else if (lower.includes('chi phí') || lower.includes('tối ưu')) clipTitle = "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ";
+              else clipTitle = `BÍ QUYẾT XUẤT NHẬP KHẨU THỰC CHIẾN #${idx + 1}`;
             }
 
             return {
