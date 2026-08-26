@@ -704,7 +704,7 @@ export default function WysiwygExportModal({
             </div>
             <div className="p-2 rounded-lg bg-[#181b28] border border-[#2c3147]">
               <div className="text-[10px] text-slate-400">Tốc Độ Khung Hình</div>
-              <div className="font-bold text-indigo-400 mt-0.5">30 FPS Smooth</div>
+              <div className="font-bold text-indigo-400 mt-0.5">60 FPS Smooth</div>
             </div>
           </div>
 

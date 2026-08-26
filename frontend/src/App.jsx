@@ -503,6 +503,14 @@ export default function App() {
     };
 
     videoRef.current.addEventListener('play', setupAudioGraph, { once: true });
+    // BUG #22 FIX: Cleanup AudioContext when leaving editor view
+    return () => {
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        try { audioContextRef.current.close(); } catch(e) {}
+        audioContextRef.current = null;
+        audioNodesRef.current = null;
+      }
+    };
   }, [currentView]);
 
   // Update audio filter gains on toggle

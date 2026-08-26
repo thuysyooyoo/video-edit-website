@@ -87,13 +87,11 @@ export default function OpusCanvasPreview({
 
   const [transitionTriggered, setTransitionTriggered] = useState(false);
   const [currentTransitionEffect, setCurrentTransitionEffect] = useState(activeTransition);
-  const [isAiSegmenting, setIsAiSegmenting] = useState(false);
   
   const brollVideoRef = useRef(null);
   const brollImageRef = useRef(null);
   const fitVideoRef = useRef(null);    // BUG #8 FIX: ref for fit-mode blur video
   const splitVideoRef = useRef(null);  // BUG #8 FIX: ref for split-mode speaker 2 video
-  const segmentationCanvasRef = useRef(null);
 
   // Dynamic Z-Index based on custom Layer Stacking Order
   const getLayerZIndex = (layerId, defaultZ = 20) => {
@@ -103,9 +101,6 @@ export default function OpusCanvasPreview({
     const idx = layerOrder.indexOf(layerId);
     return idx !== -1 ? (10 + idx * 5) : defaultZ;
   };
-  const tempCanvasRef = useRef(null);
-  const selfieSegRef = useRef(null);
-  const animFrameIdRef = useRef(null);
   const lastTriggeredSceneTransitionRef = useRef(null);
   const canvasContainerRef = useRef(null);
 
