@@ -549,14 +549,37 @@ export function drawTitleCard(ctx, titleConfig, customTitle, targetWidth = 1080,
 
     ctx.fillStyle = '#6ee7b7';
   } else if (style === 'yellow_impact') {
-    // Chữ vàng không nền nhưng có bóng đậm
+    // 🌟 Nền đen viền vàng rực rỡ + Chữ vàng tươi nổi bật
+    drawRoundedRect(ctx, rx, ry, boxWidth, boxHeight, 28);
+    ctx.fillStyle = 'rgba(10, 12, 20, 0.94)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 8;
+    ctx.fill();
+
+    ctx.shadowColor = 'rgba(250, 204, 21, 0.5)';
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
     ctx.fillStyle = '#fde047';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 8;
+  } else if (style === 'minimal') {
+    // Nền đen mờ tối giản
+    drawRoundedRect(ctx, rx, ry, boxWidth, boxHeight, 24);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
   } else {
     // Pill White mặc định
     drawRoundedRect(ctx, rx, ry, boxWidth, boxHeight, 24);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 15;
     ctx.fill();
@@ -567,9 +590,6 @@ export function drawTitleCard(ctx, titleConfig, customTitle, targetWidth = 1080,
   const startTextY = ry + paddingY + (lineHeight / 2) + 5;
   for (let i = 0; i < lines.length; i++) {
     const ly = startTextY + i * lineHeight;
-    if (style === 'yellow_impact') {
-      ctx.strokeText(lines[i], 0, ly);
-    }
     ctx.fillText(lines[i], 0, ly);
   }
 

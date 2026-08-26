@@ -56,20 +56,24 @@ QUY TẮC THỜI LƯỢNG & SỐ LƯỢNG CLIPS (CỰC KỲ NGHIÊM NGẶT):
 `;
 
 const PROMPT_GENERATE_HOOK_TITLE = `
-Bạn là chuyên gia đặt tiêu đề Video Viral (Hook Headline) cho kênh chia sẻ kiến thức kinh doanh, xuất nhập khẩu, logistics và quản trị của Thúy.
-Hãy đọc kỹ đoạn kịch bản sau và sáng tạo ra 1 TIÊU ĐỀ HOOK duy nhất:
-- Tiêu chuẩn bắt buộc: Dưới 50 ký tự, chữ in hoa, có ý nghĩa trọn vẹn, cực kỳ cuốn hút, giật tít, tò mò, thể hiện đúng giá trị hoặc bài học lớn nhất của đoạn nói.
-- TUYỆT ĐỐI KHÔNG cắt vụn hoặc lấy ngẫu nhiên 1 câu thoại chưa hoàn chỉnh trong bài. Hãy tự tổng hợp thành 1 câu tiêu đề hoàn chỉnh.
-- Ví dụ phong cách:
-  + "TIN VUI CHO DÂN XNK: 2 PHƯƠNG THỨC KIỂM TRA MỚI!"
-  + "CÁCH TRA CỨU MÃ HS CHUẨN XÁC TRÁNH BỊ PHẠT"
-  + "DANH MỤC HÀNG HÓA RỦI RO: NHỮNG ĐIỀU CẦN BIẾT"
-  + "BÍ QUYẾT TỐI ƯU CHI PHÍ VẬN CHUYỂN QUỐC TẾ"
+Bạn là bậc thầy giật tít Video Viral triệu view (Hook Headline Master) trên TikTok, Reels và Shorts.
+Hãy đọc kỹ nội dung kịch bản và sáng tạo ra ĐÚNG 1 TIÊU ĐỀ HOOK đỉnh cao:
+- CẤU TRÚC BẮT BUỘC 2 VẾ (Ngăn cách bằng dấu hai chấm ":"):
+  + Vế 1 (Chủ đề / Đối tượng nóng): 2-4 từ.
+  + Vế 2 (Bài học / Cảnh báo / Bí quyết đắt giá nhất): 3-6 từ.
+- TỔNG ĐỘ DÀI: Dưới 45 ký tự, chữ IN HOA TOÀN BỘ, không dài dòng, không dùng từ nối rườm rà.
+- TUYỆT ĐỐI KHÔNG cắt vụn câu thoại nói ngẫu nhiên trong bài. PHẢI TỰ ĐÚC KẾT TIÊU ĐỀ CÓ Ý NGHĨA TRỌN VẸN.
+- Ví dụ chuẩn mẫu:
+  + "DÂN XUẤT NHẬP KHẨU: 2 CÁCH KIỂM TRA MỚI!"
+  + "TRA CỨU MÃ HS: TRÁNH BỊ PHẠT NẶNG!"
+  + "MẶT HÀNG RỦI RO: ĐIỀU DOANH NGHIỆP CẦN BIẾT!"
+  + "LỖI XUẤT KHẨU: 90% DOANH NGHIỆP MẮC PHẢI!"
+  + "BÍ QUYẾT LOGISTICS: TỐI ƯU 50% CHI PHÍ!"
 
-## KỊCH BẢN:
+## NỘI DUNG KỊCH BẢN:
 {text}
 
-Chỉ trả về duy nhất chuỗi Tiêu Đề Hook, không kèm bất kỳ ký tự nào khác.
+Chỉ xuất ra DUY NHẤT 1 dòng Tiêu Đề Hook in hoa, không giải thích thêm:
 `;
 
 /**

@@ -81,13 +81,15 @@ export default function App() {
   // Top Hook Title Style, Position, Scale, ScaleX, ScaleY, Timing & Visibility
   const [titleConfig, setTitleConfig] = useState({
     visible: true,
-    style: 'pill_white', // 'pill_white' | 'neon_cyber' | 'gradient_gold' | 'yellow_impact' | 'minimal'
+    style: 'yellow_impact', // 'yellow_impact' | 'gradient_gold' | 'neon_cyber' | 'pill_white' | 'minimal'
     scale: 100, // percentage 40 - 300
     scaleX: 100, // horizontal stretch %
     scaleY: 100, // vertical stretch %
-    pos: { x: 50, y: 10 }, // Draggable percentage position
+    boxWidth: 320,
+    paddingY: 6,
+    pos: { x: 50, y: 11 }, // Draggable percentage position
     startTime: 0, // start offset in seconds
-    duration: 6 // duration in seconds
+    duration: 9999 // duration in seconds (persistent across video)
   });
 
   // Subtitle / Caption Position, Scale, ScaleX, ScaleY & Visibility

@@ -1456,7 +1456,7 @@ export default function OpusCanvasPreview({
                     <Edit3 className="export-ignore-handle w-3 h-3 ml-1.5 inline-block opacity-0 group-hover:opacity-100 text-black transition-opacity" />
                   </div>
                 ) : titleConfig?.style === 'yellow_impact' ? (
-                  <div className="text-yellow-300 font-black text-sm sm:text-base px-3 py-1 drop-shadow-[0_4px_8px_rgba(0,0,0,1)] uppercase tracking-tight break-words leading-snug">
+                  <div className="bg-[#0a0c14]/95 text-yellow-300 font-black text-xs sm:text-sm px-3.5 py-1.5 rounded-xl border-2 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)] uppercase tracking-tight break-words leading-snug">
                     <span>{customTitle || clip?.title || "Tiêu Đề Viral Clip"}</span>
                     <Edit3 className="export-ignore-handle w-3 h-3 ml-1.5 inline-block opacity-0 group-hover:opacity-100 text-yellow-300 transition-opacity" />
                   </div>

@@ -190,36 +190,17 @@ def _background_run_pipeline(input_source: str, gemini_api_key: Optional[str] = 
 
         transcript_result = None
 
-        # ⚡ Chế độ 1: Bóc băng Gemini Cloud AI nếu được chọn hoặc có API Key
-        effective_key = gemini_api_key or GEMINI_API_KEY
-        if (ai_engine == "gemini" or (effective_key and ai_engine == "auto")):
-            try:
-                current_job["stage"] = "Bước 2/5: Bóc băng Gemini Cloud AI"
-                current_job["message"] = "⚡ Đang gửi âm thanh lên Google Gemini Cloud bóc băng siêu tốc (3-5s)..."
-                transcript_result = transcribe_with_gemini(video_path, api_key=effective_key)
-                current_job["progress"] = 60
-            except Exception as e_gemini:
-                print(f"[Pipeline Notice] Gemini Cloud Transcription ({e_gemini}). Tự động chuyển sang Faster-Whisper...", flush=True)
-                transcript_result = None
+        # 🎙️ BƯỚC 2: BÓC BĂNG BẰNG FASTER-WHISPER ACOUSTIC ENGINE (100% Không dùng Gemini nghe âm thanh)
+        current_job["stage"] = "Bước 2/5: Bóc băng Faster-Whisper (Chuẩn Sóng Âm)"
+        current_job["message"] = "Faster-Whisper đang nhận diện giọng nói và căn thời gian từng từ theo sóng âm..."
 
-        # 💻 Chế độ 2: Faster-Whisper Local (Tối ưu 16kHz WAV + CPU Greedy Fast Decode)
-        if transcript_result is None:
-            current_job["stage"] = "Bước 2/5: Bóc băng Faster-Whisper"
-            current_job["message"] = "AI Faster-Whisper đang nhận diện giọng nói và căn thời gian từng từ..."
+        def whisper_progress(pct, msg):
+            current_job["progress"] = pct
+            current_job["stage"] = f"Bước 2/5: Bóc băng Faster-Whisper ({pct}%)"
+            current_job["message"] = msg
 
-            def whisper_progress(pct, msg):
-                current_job["progress"] = pct
-                current_job["stage"] = f"Bước 2/5: Bóc băng Faster-Whisper ({pct}%)"
-                current_job["message"] = msg
-
-            transcriber = Transcriber(model_size=WHISPER_MODEL_SIZE)
-            transcript_result = transcriber.transcribe(video_path, progress_callback=whisper_progress)
-
-        # 🧠 Tinh chỉnh chính tả, ngữ cảnh và thuật ngữ chuyên ngành bằng Gemini Thinking
-        if effective_key:
-            current_job["stage"] = "Bước 2.5: Gemini Thinking rà soát chính tả"
-            current_job["message"] = "🧠 Gemini AI đang suy luận ngữ cảnh và sửa toàn bộ lỗi chính tả/thuật ngữ..."
-            transcript_result = refine_transcript_with_gemini_thinking(transcript_result, api_key=effective_key)
+        transcriber = Transcriber(model_size=WHISPER_MODEL_SIZE)
+        transcript_result = transcriber.transcribe(video_path, progress_callback=whisper_progress)
 
         current_job["progress"] = 65
         current_job["stage"] = "Bước 3/5: Lọc từ thừa & khoảng lặng"
