@@ -1252,13 +1252,11 @@ export function renderCompositedFrame(ctx, options = {}) {
       }
     },
     'layer_captions': () => {
-      // BUG #2 + #4 FIX: Filter excluded words, no fallback to full words[]
+      // BUG #2 + #4 FIX: Filter excluded words using local index matching clip scope
       const excludedSet = options.excludedWordIndices || new Set();
       const clipEndTime = clipStartTime + (options.clipDuration || 999999);
-      const clipWords = (words || []).filter((w, idx) => {
-        if (excludedSet.has(idx)) return false;
-        return w.start >= (clipStartTime - 0.2) && w.end <= (clipEndTime + 0.5);
-      });
+      const rawClipWords = (words || []).filter(w => w.start >= (clipStartTime - 0.2) && w.end <= (clipEndTime + 0.5));
+      const clipWords = rawClipWords.filter((w, localIdx) => !excludedSet.has(localIdx));
       drawKaraokeCaptions(ctx, clipWords, captionConfig || {}, fontStyle || {}, currentTime, targetWidth, targetHeight);
     },
     'layer_title': () => {

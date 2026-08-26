@@ -11,6 +11,78 @@ export const DEFAULT_GEMINI_MODELS = [
 ];
 
 /**
+ * 🎯 ACOUSTIC WAVEFORM ENERGY ALIGNMENT (VAD Snapper)
+ * Căn chỉnh mốc thời gian của từng từ vào đúng chân sóng âm của tiếng nói thực tế trong PCM buffer
+ */
+export function alignWordsWithAcousticEnergy(words = [], pcmData = null, sampleRate = 16000) {
+  if (!words || words.length === 0 || !pcmData || pcmData.length === 0) {
+    return words;
+  }
+
+  const frameSize = Math.round(sampleRate * 0.02); // 20ms frame (320 samples @ 16kHz)
+  const totalDuration = pcmData.length / sampleRate;
+
+  // Tính toán Energy Envelope (RMS) theo từng frame 20ms
+  const numFrames = Math.floor(pcmData.length / frameSize);
+  const frameEnergies = new Float32Array(numFrames);
+
+  let maxEnergy = 0.00001;
+  for (let f = 0; f < numFrames; f++) {
+    let sum = 0;
+    const startSample = f * frameSize;
+    for (let s = 0; s < frameSize; s++) {
+      const val = pcmData[startSample + s];
+      sum += val * val;
+    }
+    const rms = Math.sqrt(sum / frameSize);
+    frameEnergies[f] = rms;
+    if (rms > maxEnergy) maxEnergy = rms;
+  }
+
+  // Ngưỡng năng lượng tiếng nói tối thiểu (Voice Activity Threshold)
+  const noiseFloor = maxEnergy * 0.08;
+
+  // Căn chỉnh từng từ vào dao động sóng âm thực tế
+  return words.map((w) => {
+    let rawStart = w.start;
+    let rawEnd = w.end;
+
+    // Quét tìm Energy Onset trong cửa sổ [-0.25s, +0.25s] quanh rawStart
+    const searchStartFrame = Math.max(0, Math.floor((rawStart - 0.25) / 0.02));
+    const searchEndFrame = Math.min(numFrames - 1, Math.floor((rawStart + 0.25) / 0.02));
+
+    let bestOnsetFrame = Math.floor(rawStart / 0.02);
+    for (let f = searchStartFrame; f <= searchEndFrame; f++) {
+      if (frameEnergies[f] >= noiseFloor) {
+        bestOnsetFrame = f;
+        break;
+      }
+    }
+
+    // Quét tìm Energy Offset trong cửa sổ [-0.20s, +0.30s] quanh rawEnd
+    const searchEndFrameStart = Math.max(0, Math.floor((rawEnd - 0.20) / 0.02));
+    const searchEndFrameEnd = Math.min(numFrames - 1, Math.floor((rawEnd + 0.30) / 0.02));
+
+    let bestOffsetFrame = Math.floor(rawEnd / 0.02);
+    for (let f = searchEndFrameEnd; f >= searchEndFrameStart; f--) {
+      if (frameEnergies[f] >= noiseFloor) {
+        bestOffsetFrame = f + 1;
+        break;
+      }
+    }
+
+    const alignedStart = Math.max(0, Math.min(totalDuration, Math.round(bestOnsetFrame * 0.02 * 100) / 100));
+    const alignedEnd = Math.max(alignedStart + 0.12, Math.min(totalDuration, Math.round(bestOffsetFrame * 0.02 * 100) / 100));
+
+    return {
+      ...w,
+      start: alignedStart,
+      end: alignedEnd
+    };
+  });
+}
+
+/**
  * Gửi 1 đoạn âm thanh (chunk) lên Google Gemini API
  */
 async function transcribeSingleChunk(base64Audio, chunkDuration, apiKey, preferredModel = 'gemini-2.5-flash') {
@@ -140,7 +212,7 @@ Nhiệm vụ của bạn:
 }
 
 /**
- * ⚡ Bóc băng toàn bộ âm thanh (Tự động ghép nối các Chunks 120s nếu video dài)
+ * ⚡ Bóc băng toàn bộ âm thanh (Tự động ghép nối các Chunks 25s độ phân giải cao và căn chỉnh sóng âm)
  */
 export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuration, apiKey, preferredModel = 'gemini-2.5-flash', onProgress = null) {
   if (!apiKey || !apiKey.trim()) {
@@ -150,10 +222,12 @@ export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuratio
   // Chuẩn hóa danh sách chunks
   let chunks = [];
   let duration = totalDuration || 60;
+  let rawPcm = null;
 
   if (typeof audioDataOrBase64 === 'object' && audioDataOrBase64.chunks && audioDataOrBase64.chunks.length > 0) {
     chunks = audioDataOrBase64.chunks;
     duration = audioDataOrBase64.duration || totalDuration;
+    rawPcm = audioDataOrBase64.pcmData || null;
   } else {
     const base64Str = typeof audioDataOrBase64 === 'string' ? audioDataOrBase64 : audioDataOrBase64.base64;
     chunks = [{
@@ -206,14 +280,26 @@ export async function transcribeWithGeminiClient(audioDataOrBase64, totalDuratio
     }
   }
 
+  if (onProgress) onProgress(90, 'Đang căn chỉnh mốc thời gian vào dao động sóng âm thực tế (Acoustic Alignment)...');
+
+  // 🎯 CĂN CHỈNH SÓNG ÂM THỰC TẾ NẾU CÓ MẢNG PCM GỐC
+  let finalWords = allWords;
+  if (rawPcm && rawPcm.length > 0) {
+    try {
+      finalWords = alignWordsWithAcousticEnergy(allWords, rawPcm, 16000);
+    } catch(alignErr) {
+      console.warn('[VAD Alignment] Warning:', alignErr);
+    }
+  }
+
   if (onProgress) onProgress(100, 'Đã bóc băng & đồng bộ phụ đề hoàn tất!');
 
-  const fullText = textParts.join(' ') || allWords.map(w => w.word).join(' ');
+  const fullText = textParts.join(' ') || finalWords.map(w => w.word).join(' ');
 
   return {
     full_text: fullText,
     duration: duration,
-    words: allWords
+    words: finalWords
   };
 }
 
