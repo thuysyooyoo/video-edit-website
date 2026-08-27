@@ -130,11 +130,15 @@ function extractAudioViaMediaElement(file, realDuration, targetSampleRate = 1600
     let totalSamples = 0;
     const nativeSampleRate = audioCtx.sampleRate || 48000;
 
+    let isPausedByTabSwitch = false;
+    let watchdogTimer = null;
+    let lastTime = -1;
+
     processor.onaudioprocess = (e) => {
       const input = e.inputBuffer.getChannelData(0);
       capturedChunks.push(new Float32Array(input));
       totalSamples += input.length;
-      if (onProgress && realDuration > 0) {
+      if (onProgress && realDuration > 0 && !isPausedByTabSwitch) {
         const pct = Math.min(80, 25 + Math.round((media.currentTime / realDuration) * 55));
         onProgress(pct, `Đang giải mã luồng phát ${Math.round(media.currentTime)}s / ${Math.round(realDuration)}s...`);
       }
@@ -144,8 +148,27 @@ function extractAudioViaMediaElement(file, realDuration, targetSampleRate = 1600
     processor.connect(silentGain);
     silentGain.connect(audioCtx.destination);
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (!media.paused) {
+          isPausedByTabSwitch = true;
+          media.pause();
+          if (onProgress) onProgress(media.currentTime / realDuration * 55 + 25, '⚠️ Đã tạm dừng bóc băng vì chuyển tab. Vui lòng quay lại tab để tiếp tục (Bảo vệ luồng 12 phút)...');
+        }
+      } else {
+        if (isPausedByTabSwitch) {
+          isPausedByTabSwitch = false;
+          media.play().catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const cleanup = () => {
       try {
+        clearInterval(watchdogTimer);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         media.pause();
         source.disconnect();
         processor.disconnect();
@@ -155,44 +178,47 @@ function extractAudioViaMediaElement(file, realDuration, targetSampleRate = 1600
       URL.revokeObjectURL(url);
     };
 
-    media.onloadedmetadata = () => {
-      // 🛡️ BẮT BUỘC tốc độ 1.0x chuẩn để âm thanh không bị bóp méo
-      media.playbackRate = 1.0;
-      media.play().catch(reject);
-    };
-
-    media.onended = async () => {
+    const processExtractedAudio = async () => {
       cleanup();
+      if (totalSamples === 0) {
+        return reject(new Error('Không trích xuất được âm thanh nào.'));
+      }
       const rawNativePcm = new Float32Array(totalSamples);
       let offset = 0;
       for (const chunk of capturedChunks) {
         rawNativePcm.set(chunk, offset);
         offset += chunk.length;
       }
-      
-      // Resample từ native (44.1k/48k) về target (16,000Hz)
       const resampled = await resamplePcmBuffer(rawNativePcm, nativeSampleRate, targetSampleRate);
       resolve(resampled);
+    };
+
+    media.onloadedmetadata = () => {
+      media.playbackRate = 1.0;
+      media.play().catch(reject);
+      
+      // Watchdog Timer linh hoạt thay cho setTimeout cứng nhắc
+      watchdogTimer = setInterval(() => {
+        if (!isPausedByTabSwitch) {
+          if (media.currentTime === lastTime && media.currentTime > 0) {
+            // Video bị kẹt không chạy được tiếp dù không chuyển tab
+            if (media.currentTime >= realDuration - 1.0) {
+              processExtractedAudio(); // Đã đến đuôi video
+            }
+          }
+          lastTime = media.currentTime;
+        }
+      }, 3000);
+    };
+
+    media.onended = () => {
+      processExtractedAudio();
     };
 
     media.onerror = (err) => {
       cleanup();
       reject(new Error('Lỗi MediaElement: ' + (err.message || 'Media playback error')));
     };
-
-    setTimeout(async () => {
-      if (totalSamples > 0) {
-        cleanup();
-        const rawNativePcm = new Float32Array(totalSamples);
-        let offset = 0;
-        for (const chunk of capturedChunks) {
-          rawNativePcm.set(chunk, offset);
-          offset += chunk.length;
-        }
-        const resampled = await resamplePcmBuffer(rawNativePcm, nativeSampleRate, targetSampleRate);
-        resolve(resampled);
-      }
-    }, Math.max(30000, realDuration * 1000 + 10000));
   });
 }
 

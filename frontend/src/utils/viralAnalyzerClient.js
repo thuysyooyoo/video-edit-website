@@ -24,12 +24,13 @@ CẤU TRÚC 3 TRỤ CỘT CỦA MỖI CLIP VIRAL:
    - Nêu rõ Solution và chấm value_score (50 - 100).
 
 QUY TẮC TIÊU ĐỀ 'title' & THỜI LƯỢNG (CỰC KỲ NGHIÊM NGẶT):
-- TIÊU ĐỀ 'title' BẮT BUỘC CÓ CẤU TRÚC 2 VẾ (Ngăn cách bằng dấu hai chấm ":"):
-  + Vế 1 (Chủ đề / Đối tượng nóng, 2-4 từ) : Vế 2 (Bài học / Cảnh báo / Câu hỏi giật tít, 3-6 từ).
-  + Viết IN HOA TOÀN BỘ, dưới 45 ký tự.
-  + TUYỆT ĐỐI KHÔNG lấy nguyên câu thoại nói ngẫu nhiên trong bài. PHẢI TỰ ĐÚC KẾT TIÊU ĐỀ CÓ Ý NGHĨA TRỌN VẸN.
-  + Ví dụ: "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!" hoặc "TRA CỨU MÃ HS: 2 CÁCH NHANH NHẤT!" hoặc "DÂN XUẤT NHẬP KHẨU: ĐÃ BIẾT LUẬT MỚI CHƯA?".
-- Thời lượng mỗi clip: TỐI THIỂU 60 GIÂY (1 phút) và TỐI ĐA 240 GIÂY (4 phút). (Nếu video gốc ngắn hơn 60s, giữ toàn bộ video).
+- QUY TẮC TIÊU ĐỀ BẮT BUỘC (TỬ HÌNH NẾU VI PHẠM):
+  + Cấu trúc 2 vế (Ngăn cách bằng ":"). VD: "CHỦ ĐỀ: BÀI HỌC".
+  + Viết IN HOA TOÀN BỘ.
+  + PHẢI TỰ ĐÚC KẾT TỪ NỘI DUNG. TUYỆT ĐỐI KHÔNG COPY CÁC TIÊU ĐỀ VÍ DỤ!
+  + KHÔNG BAO GIỜ được dùng lại các câu như "DANH MỤC HÀNG HÓA...", "TRA CỨU MÃ HS..." nếu nội dung không hề nói về nó.
+- SỐ LƯỢNG CLIP BẮT BUỘC: {clip_limit_rule}
+- Thời lượng mỗi clip: TỐI THIỂU 45 GIÂY và TỐI ĐA 240 GIÂY.
 - start_time & end_time: Cắt đúng đầu câu và cuối câu hoàn chỉnh của người nói.
 
 ## DỮ LIỆU TRANSCRIPT:
@@ -40,7 +41,7 @@ QUY TẮC TIÊU ĐỀ 'title' & THỜI LƯỢNG (CỰC KỲ NGHIÊM NGẶT):
   "clips": [
     {
       "id": 1,
-      "title": "DANH MỤC HÀNG HÓA: QUY ĐỊNH MỚI CẦN BIẾT!",
+      "title": "TỰ ĐẶT TIÊU ĐỀ THEO NỘI DUNG: CHẤT LƯỢNG CAO!",
       "start_time": 0.0,
       "end_time": 120.0,
       "hook": "Câu mở đầu giật gân ấn tượng...",
@@ -245,7 +246,16 @@ export async function analyzeViralClipsClient(transcript, videoMetadata = {}, ap
       }
       const formattedTranscript = transcriptParagraphs.join('\n\n');
 
-      const prompt = PROMPT_VIRAL_3_PILLARS.replace('{transcript_text}', formattedTranscript);
+      const clipLimitRule = totalDuration <= 180 
+        ? "CHỈ ĐƯỢC TẠO DUY NHẤT 1 CLIP vì video gốc rất ngắn."
+        : totalDuration <= 300 
+          ? "Tạo TỐI ĐA 2-3 clip."
+          : "Tạo từ 3 đến 6 clips phân bổ đều.";
+
+      const prompt = PROMPT_VIRAL_3_PILLARS
+        .replace('{transcript_text}', formattedTranscript)
+        .replace('{clip_limit_rule}', clipLimitRule);
+
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
       const res = await fetch(url, {

@@ -165,6 +165,57 @@ export async function transcribeWithGroqWhisper(audioResult, apiKey = '', onProg
     }
   }
 
+  // 🔥 TÍCH HỢP ACOUSTIC VAD (Voice Activity Detection) 🔥
+  // Whisper thường có thói quen "kéo dài" thời gian kết thúc của một từ tràn sang cả vùng khoảng lặng.
+  // Code dưới đây dùng mảng PCM để đo năng lượng âm thanh thực tế ở đuôi mỗi từ và cắt tỉa (Trim) khoảng lặng dư thừa.
+  if (pcmData && pcmData.length > 0) {
+    const windowSec = 0.03; // Quét mỗi khối 30ms
+    const windowSamples = Math.floor(windowSec * targetSampleRate);
+    
+    // Tìm độ ồn nền (Noise Floor) bằng cách lấy mẫu 10% các đoạn êm nhất
+    let sampleCount = Math.floor(pcmData.length / windowSamples);
+    let energies = [];
+    for (let i = 0; i < Math.min(1000, sampleCount); i++) {
+      let sumSq = 0;
+      let s = i * windowSamples;
+      for (let j = 0; j < windowSamples; j++) {
+        sumSq += pcmData[s+j]*pcmData[s+j];
+      }
+      energies.push(Math.sqrt(sumSq / windowSamples));
+    }
+    energies.sort((a,b) => a - b);
+    const noiseFloor = energies[Math.floor(energies.length * 0.1)] || 0;
+    // Ngưỡng im lặng = Độ ồn nền + 1 biên độ an toàn cực nhỏ
+    const silenceThreshold = Math.max(0.005, noiseFloor * 1.5);
+
+    // Gọt giũa đuôi từ
+    for (let i = 0; i < allWords.length; i++) {
+      const w = allWords[i];
+      let searchEnd = Math.min(pcmData.length, Math.floor(w.end * targetSampleRate));
+      const minSample = Math.floor((w.start + 0.1) * targetSampleRate); // Ít nhất phải giữ 100ms
+      
+      let foundActualEnd = searchEnd;
+      // Quét giật lùi từ w.end về w.start
+      while (foundActualEnd > minSample) {
+        let sumSq = 0;
+        let s = Math.max(0, foundActualEnd - windowSamples);
+        for(let j = 0; j < windowSamples; j++) sumSq += pcmData[s+j]*pcmData[s+j];
+        let rms = Math.sqrt(sumSq / windowSamples);
+        
+        if (rms > silenceThreshold) {
+          break; // Chạm phải tiếng nói thực sự
+        }
+        foundActualEnd -= windowSamples;
+      }
+      
+      const newEndSec = foundActualEnd / targetSampleRate;
+      // Nếu cắt gọt được hơn 150ms khoảng lặng vô nghĩa, tiến hành cập nhật w.end
+      if (w.end - newEndSec > 0.15) {
+        w.end = Math.max(w.start + 0.1, newEndSec + 0.05); // Trả lại 50ms ngân âm
+      }
+    }
+  }
+
   if (onProgress) {
     onProgress(100, `Bóc băng Whisper Large-V3 hoàn tất (${allWords.length} từ chuẩn sóng âm 100%)!`);
   }
