@@ -1316,23 +1316,62 @@ export default function App() {
   const handleExtendStart = (seconds = 5) => {
     if (!activeClip) return;
     const newStart = Math.max(0, activeClip.start_time - seconds);
+    const timeDiff = activeClip.start_time - newStart; // Lượng thời gian mở rộng thêm
+
+    if (timeDiff <= 0) return;
+
+    // 1. Cập nhật phân cảnh đầu tiên để lấp đầy Timeline (Bảo vệ Lỗ hổng 2 & 4)
+    let updatedScenes = activeClip.scenes ? [...activeClip.scenes] : [];
+    if (updatedScenes.length > 0) {
+      updatedScenes[0] = { ...updatedScenes[0], start_time: newStart };
+    } else {
+      updatedScenes = [
+        { id: `${activeClip.id}_sc0`, title: activeClip.title || 'Phân cảnh chính', start_time: newStart, end_time: activeClip.end_time, transition: null }
+      ];
+    }
+
+    // 2. BÙ TRỪ THỜI GIAN CHO TOÀN BỘ LAYER (Bảo vệ Lỗ hổng 1 - Trôi B-Roll)
+    setBrolls(prev => prev.map(b => ({ ...b, start: (b.start ?? 0) + timeDiff })));
+    setSoundFxMarkers(prev => prev.map(s => ({ ...s, time: (s.time ?? 0) + timeDiff })));
+    setTextLayers(prev => prev.map(tl => {
+      const obj = typeof tl === 'string' ? { id: `tl_${Date.now()}_${Math.random()}`, text: tl } : tl;
+      return { ...obj, startTime: (obj.startTime ?? 0) + timeDiff };
+    }));
+    setAnimatedStickers(prev => prev.map(stk => ({ ...stk, startTime: (stk.startTime ?? 0) + timeDiff })));
+    setTitleConfig(prev => ({ ...prev, startTime: (prev?.startTime ?? 0) + timeDiff }));
+
+    // 3. Cập nhật Clip
     setActiveClip({
       ...activeClip,
       start_time: newStart,
-      duration: activeClip.end_time - newStart
+      duration: activeClip.end_time - newStart,
+      scenes: updatedScenes // Lấp đầy khoảng trống
     });
     setCurrentTime(newStart);
   };
 
   const handleExtendEnd = (seconds = 5) => {
     if (!activeClip) return;
-    // BUG #17 FIX: Use actual video duration instead of hardcoded test value
+    // Lấy thời lượng tối đa an toàn (Bảo vệ Lỗ hổng 3)
     const maxDur = data?.transcript?.duration || videoRef.current?.duration || 600;
     const newEnd = Math.min(maxDur, activeClip.end_time + seconds);
+
+    // Cập nhật phân cảnh cuối cùng để lấp đầy Timeline (Bảo vệ Lỗ hổng 2 & 4)
+    let updatedScenes = activeClip.scenes ? [...activeClip.scenes] : [];
+    if (updatedScenes.length > 0) {
+      const lastIdx = updatedScenes.length - 1;
+      updatedScenes[lastIdx] = { ...updatedScenes[lastIdx], end_time: newEnd };
+    } else {
+      updatedScenes = [
+        { id: `${activeClip.id}_sc0`, title: activeClip.title || 'Phân cảnh chính', start_time: activeClip.start_time, end_time: newEnd, transition: null }
+      ];
+    }
+
     setActiveClip({
       ...activeClip,
       end_time: newEnd,
-      duration: newEnd - activeClip.start_time
+      duration: newEnd - activeClip.start_time,
+      scenes: updatedScenes
     });
   };
 
