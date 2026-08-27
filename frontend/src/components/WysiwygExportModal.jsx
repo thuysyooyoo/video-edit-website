@@ -3,6 +3,7 @@ import { toCanvas } from 'html-to-image';
 import { renderCompositedFrame } from '../utils/canvasCompositor';
 import { calculateMicroZoomFactor } from '../utils/microZoomEngine';
 import { Film, CheckCircle2, AlertCircle, X, Download, Loader2, Sparkles } from 'lucide-react';
+import ysFixWebmDuration from 'fix-webm-duration';
 
 export default function WysiwygExportModal({
   isOpen,
@@ -661,8 +662,19 @@ export default function WysiwygExportModal({
 
       const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
       const targetName = sanitizeFileName(customTitle || clip?.title);
+      
+      // Khắc phục lỗi hiển thị thời lượng của WebM (Fix WebM Duration bug)
+      const rawDuration = clip?.duration || (videoRef?.current?.duration) || 60;
+      const durationMs = Math.round(rawDuration * 1000);
+      
+      let finalBlob = blob;
+      try {
+        finalBlob = await ysFixWebmDuration(blob, durationMs, { logger: false });
+      } catch (err) {
+        console.warn('Không thể sửa WebM duration metadata, dùng file gốc:', err);
+      }
 
-      const videoUrl = URL.createObjectURL(blob);
+      const videoUrl = URL.createObjectURL(finalBlob);
       setFileName(targetName);
       setDownloadUrl(videoUrl);
       setStatus('completed');

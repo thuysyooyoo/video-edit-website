@@ -687,15 +687,19 @@ export function drawKaraokeCaptions(
   const activePhrase = group.words;
 
   // 📐 TỌA ĐỘ & TỶ LỆ BỐ CỤC KHÔNG GIAN ĐỒNG DẠNG (Spatial Coordinate & Proportion System)
-  const posX = (captionConfig.pos?.x ?? 50) / 100 * targetWidth;
-  const posY = (captionConfig.pos?.y ?? 84) / 100 * targetHeight;
-  const scale = (captionConfig.scale ?? 100) / 100;
+  const posX = (parseFloat(captionConfig.pos?.x) || 50) / 100 * targetWidth;
+  const posY = (parseFloat(captionConfig.pos?.y) || 84) / 100 * targetHeight;
+  const rawScale = parseFloat(captionConfig.scale) || 100;
+  const scale = rawScale / 100;
   const rawFontFamily = fontStyle.fontFamily || 'Montserrat';
   const cleanFontFamily = rawFontFamily.replace(/['"]/g, '');
-  const fontWeight = mapFontWeightToCanvas(fontStyle.fontWeight);
+  const fontWeight = mapFontWeightToCanvas(fontStyle.fontWeight) || '900';
 
   // 🌟 Cỡ chữ chuẩn viral 1080p (To rõ, sắc nét, chiếm 65-80% bề ngang khung hình)
-  let baseFontSize = Math.max(68, Math.round((fontStyle.fontSize || 40) * 2.5 * scale));
+  const rawFontSize = parseFloat(fontStyle.fontSize) || 40;
+  let baseFontSize = Math.round(rawFontSize * 2.5 * scale);
+  if (isNaN(baseFontSize) || baseFontSize < 68) baseFontSize = Math.max(68, Math.round(40 * 2.5 * scale)); // Safe fallback
+
   const textColor = fontStyle.textColor || '#ffffff';
   const highlightColor = fontStyle.highlightColor || '#22c55e';
   const effect = fontStyle.effect || captionConfig.effect || 'pop'; // 'pop' | 'pill' | 'glow'
@@ -703,14 +707,15 @@ export function drawKaraokeCaptions(
   const showEmoji = fontStyle.aiEmoji === true || captionConfig.aiEmoji === true;
   
   // Xác định độ dày viền an toàn: giới hạn tối đa 10% cỡ chữ để không bao giờ bị nghẹt nét chữ
-  const rawStrokeWidth = fontStyle.strokeWidth !== undefined ? fontStyle.strokeWidth : (fontStyle.hasStroke === false ? 0 : 6);
+  const rawStrokeWidth = fontStyle.strokeWidth !== undefined ? parseFloat(fontStyle.strokeWidth) : (fontStyle.hasStroke === false ? 0 : 6);
   const strokeColor = fontStyle.strokeColor || '#000000';
   const maxSafeStroke = Math.round(baseFontSize * 0.10);
-  const scaledStrokeWidth = rawStrokeWidth > 0 ? Math.min(maxSafeStroke, Math.max(2, Math.round(rawStrokeWidth * 1.2 * scale))) : 0;
+  const scaledStrokeWidth = (rawStrokeWidth && !isNaN(rawStrokeWidth) && rawStrokeWidth > 0) ? Math.min(maxSafeStroke, Math.max(2, Math.round(rawStrokeWidth * 1.2 * scale))) : 0;
 
   ctx.save();
   ctx.translate(posX, posY);
 
+  // ÉP BUỘC CHUỖI FONT CỰC KỲ CHUẨN XÁC ĐỂ TRÁNH TRÌNH DUYỆT TỪ CHỐI (FALLBACK 10px)
   ctx.font = `${fontWeight} ${baseFontSize}px "${cleanFontFamily}", "Be Vietnam Pro", "Inter", "Segoe UI", sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
