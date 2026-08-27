@@ -1020,6 +1020,49 @@ export default function App() {
     }
   };
 
+  // 🎙️ ANTI-CLICK AUDIO V-FADE ENGINE (Smooth Cuts - Chống tiếng "Tạch" rát tai khi cắt từ)
+  useEffect(() => {
+    if (!isPlaying || !videoRef.current || !skipIntervals.length) return;
+    
+    let rafId;
+    const fadeDuration = 0.04; // 40ms để vuốt âm thanh
+    
+    const smoothAudioLoop = () => {
+      const vid = videoRef.current;
+      if (!vid) return;
+      const t = vid.currentTime;
+      let targetVolume = 1.0;
+      
+      // Kiểm tra vùng lân cận điểm cắt (skipIntervals)
+      for (const skip of skipIntervals) {
+        if (t >= skip.start - fadeDuration && t <= skip.start) {
+          // Vuốt nhỏ dần trước khi chạm điểm cắt
+          const ratio = (skip.start - t) / fadeDuration; // 1.0 -> 0.0
+          targetVolume = Math.max(0, ratio);
+          break;
+        } else if (t >= skip.end && t <= skip.end + fadeDuration) {
+          // Vuốt to dần ngay sau khi nhảy tới đuôi điểm cắt
+          const ratio = (t - skip.end) / fadeDuration; // 0.0 -> 1.0
+          targetVolume = Math.max(0, ratio);
+          break;
+        }
+      }
+      
+      // Chỉ gán khi có thay đổi thực sự để tránh spam DOM
+      if (Math.abs(vid.volume - targetVolume) > 0.05) {
+        vid.volume = targetVolume;
+      }
+      
+      rafId = requestAnimationFrame(smoothAudioLoop);
+    };
+    
+    rafId = requestAnimationFrame(smoothAudioLoop);
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (videoRef.current) videoRef.current.volume = 1.0;
+    };
+  }, [isPlaying, skipIntervals]);
+
   // Live Sound Effects & Real-Time Skip Engine (Không nhảy sớm, không đáp trễ)
   const handleTimeUpdate = (time) => {
     for (const skip of skipIntervals) {
