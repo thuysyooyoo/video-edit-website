@@ -352,21 +352,22 @@ export default function OpusCanvasPreview({
   };
 
   // Ưu tiên B-roll ở lớp trên cùng (Reverse array lookup)
-  // Hỗ trợ cả mốc thời gian tuyệt đối (Absolute) và tương đối theo clip (Relative)
+  // Khớp mốc thời gian tương đối relTime (chuẩn) và tuyệt đối
+  const currentRelTime = currentTime >= clipStart ? (currentTime - clipStart) : currentTime;
   const activeBroll = [...brolls].reverse().find(b => {
     const bStart = b.start ?? 0;
     const bEnd = b.end || (bStart + (b.duration || 4));
+    const isRelMatch = currentRelTime >= (bStart - 0.05) && currentRelTime <= (bEnd + 0.05);
     const isAbsMatch = currentTime >= (bStart - 0.05) && currentTime <= (bEnd + 0.05);
-    const relTime = currentTime - clipStart;
-    const isRelMatch = relTime >= (bStart - 0.05) && relTime <= (bEnd + 0.05);
-    return isAbsMatch || isRelMatch;
+    return isRelMatch || isAbsMatch;
   });
 
   // Sync B-Roll video with main player
   useEffect(() => {
     if (activeBroll && brollVideoRef.current) {
-      const brollBaseStart = activeBroll.start >= clipStart ? activeBroll.start : (clipStart + activeBroll.start);
-      const offset = Math.max(0, currentTime - brollBaseStart + (activeBroll.videoTrimStart || 0));
+      const bStart = activeBroll.start ?? 0;
+      const curRelT = currentTime >= clipStart ? (currentTime - clipStart) : currentTime;
+      const offset = Math.max(0, curRelT - bStart + (activeBroll.videoTrimStart || 0));
       if (Math.abs(brollVideoRef.current.currentTime - offset) > 0.35) {
         brollVideoRef.current.currentTime = offset;
       }
@@ -564,9 +565,11 @@ export default function OpusCanvasPreview({
     }
 
     if (mediaSrc) {
-      const brollBaseStart = broll?.start >= clipStart ? broll.start : (clipStart + (broll?.start || 0));
+      const bStart = broll?.start ?? 0;
       const brollDur = Math.max(0.5, (broll?.end ? broll.end - broll.start : (broll?.duration || 4)));
-      const relProg = Math.max(0, Math.min(1, (currentTime - brollBaseStart) / brollDur));
+      const curRelT = currentTime >= clipStart ? (currentTime - clipStart) : currentTime;
+      const timeInBroll = Math.max(0, curRelT - bStart);
+      const relProg = Math.max(0, Math.min(1, timeInBroll / brollDur));
       const imageZoom = 1.0 + 0.08 * Math.sin(relProg * Math.PI / 2);
 
       return (

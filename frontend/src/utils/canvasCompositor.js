@@ -11,6 +11,30 @@
 
 import { getEmojiForWord } from './emojiEngine';
 
+/**
+ * 🔧 Chuyển đổi fontWeight từ tên CSS/Font Family sang giá trị Canvas 2D hợp lệ
+ * Canvas 2D chỉ hiểu: 'normal', 'bold', hoặc số '100' - '900'
+ * Nếu truyền 'Black', 'Heavy', 'ExtraBold' v.v. → Canvas sẽ REJECT toàn bộ ctx.font và dùng mặc định 10px!
+ */
+function mapFontWeightToCanvas(weight) {
+  if (!weight) return '900';
+  const w = String(weight).trim();
+  // Nếu đã là số hợp lệ (100-900) thì giữ nguyên
+  if (/^\d{3}$/.test(w)) return w;
+  const map = {
+    'Thin': '100', 'Hairline': '100',
+    'ExtraLight': '200', 'UltraLight': '200',
+    'Light': '300',
+    'Regular': '400', 'normal': '400', 'Normal': '400',
+    'Medium': '500',
+    'SemiBold': '600', 'DemiBold': '600',
+    'Bold': '700', 'bold': '700',
+    'ExtraBold': '800', 'UltraBold': '800',
+    'Black': '900', 'Heavy': '900', 'black': '900'
+  };
+  return map[w] || '900';
+}
+
 // Helper vẽ hình chữ nhật bo góc (Rounded Rectangle)
 export function drawRoundedRect(ctx, x, y, width, height, radius) {
   const r = Math.min(radius, width / 2, height / 2);
@@ -668,7 +692,7 @@ export function drawKaraokeCaptions(
   const scale = (captionConfig.scale ?? 100) / 100;
   const rawFontFamily = fontStyle.fontFamily || 'Montserrat';
   const cleanFontFamily = rawFontFamily.replace(/['"]/g, '');
-  const fontWeight = fontStyle.fontWeight || '900';
+  const fontWeight = mapFontWeightToCanvas(fontStyle.fontWeight);
 
   // 🌟 Cỡ chữ chuẩn viral 1080p (To rõ, sắc nét, chiếm 65-80% bề ngang khung hình)
   let baseFontSize = Math.max(68, Math.round((fontStyle.fontSize || 40) * 2.5 * scale));
@@ -855,7 +879,7 @@ export function drawSingleTextLayer(ctx, tl, currentTime = 0, clipStartTime = 0,
   const rawFontSize = textObj.fontSize || 42;
   const fontSize = Math.round(rawFontSize * scale * 1.05);
   const fontFamily = textObj.fontFamily || 'Montserrat';
-  const fontWeight = textObj.fontWeight || '900';
+  const fontWeight = mapFontWeightToCanvas(textObj.fontWeight);
   const displayText = textObj.isUppercase ? textObj.text.toUpperCase() : textObj.text;
 
   // Calculate In / Out Animation Progress

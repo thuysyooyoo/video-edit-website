@@ -398,6 +398,38 @@ export default function WysiwygExportModal({
       mediaRecorderRef.current = recorder;
       recorder.start(500); // chunk mỗi 500ms
 
+      // 🛡️ PHƯƠNG ÁN C: TỰ ĐỘNG TẠM DỪNG KHI CHUYỂN TAB (BẢO TOÀN 30 FPS KHÔNG GIẬT KHUNG HÌNH)
+      let isPausedByTabSwitch = false;
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          if (!video.paused && recorder.state === 'recording') {
+            isPausedByTabSwitch = true;
+            video.pause();
+            if (recorder.state === 'recording') {
+              try { recorder.pause(); } catch(e) {}
+            }
+            if (bgmAudioRef.current && !bgmAudioRef.current.paused) {
+              try { bgmAudioRef.current.pause(); } catch(e) {}
+            }
+            setStatusMessage('⚠️ Đã tạm dừng xuất vì chuyển tab. Vui lòng quay lại tab để tiếp tục ghi hình...');
+          }
+        } else {
+          if (isPausedByTabSwitch) {
+            isPausedByTabSwitch = false;
+            if (recorder.state === 'paused') {
+              try { recorder.resume(); } catch(e) {}
+            }
+            if (bgmAudioRef.current && bgmAudioRef.current.paused) {
+              try { bgmAudioRef.current.play().catch(() => {}); } catch(e) {}
+            }
+            video.play().catch(() => {});
+            setStatusMessage('Đang tiếp tục chụp khung hình chuẩn 1080x1920 (30 FPS Điện Ảnh)...');
+          }
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
       // Bắt đầu phát video
       await video.play();
 
@@ -406,7 +438,10 @@ export default function WysiwygExportModal({
       let lastProgressVal = -1;
 
       const renderStep = () => {
-        if (isCancelledRef.current) return;
+        if (isCancelledRef.current) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          return;
+        }
 
         const currT = video.currentTime;
 
@@ -423,6 +458,7 @@ export default function WysiwygExportModal({
 
         // Kiểm tra kết thúc clip (chạy đủ toàn bộ thời lượng clip)
         if (currT >= clipEnd || video.ended) {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
           video.pause();
           if (bgmAudioRef.current) bgmAudioRef.current.pause();
           if (recorder.state !== 'inactive') {
@@ -431,8 +467,8 @@ export default function WysiwygExportModal({
           return;
         }
 
-        // Tự động hồi phục nếu video bị đứng ngoài ý muốn
-        if (video.paused && !video.ended && currT < clipEnd && !isSeekingSkipRef.current) {
+        // Tự động hồi phục nếu video bị đứng ngoài ý muốn (chỉ khi không bị pause do chuyển tab)
+        if (video.paused && !video.ended && currT < clipEnd && !isSeekingSkipRef.current && !isPausedByTabSwitch) {
           video.play().catch(() => {});
         }
 
@@ -742,6 +778,14 @@ export default function WysiwygExportModal({
               <div className="font-bold text-indigo-400 mt-0.5">30 FPS Smooth (Điện Ảnh)</div>
             </div>
           </div>
+
+          {/* ⚠️ Cảnh báo quan trọng về chuyển tab */}
+          {status === 'recording' && (
+            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span><strong>Lưu ý:</strong> Vui lòng <strong>giữ nguyên tab này</strong> khi đang xuất video. Nếu bạn chuyển tab khác, hệ thống sẽ tự động tạm dừng để đảm bảo video không bị giật lag khung hình.</span>
+            </div>
+          )}
 
           {/* Error Display */}
           {status === 'error' && (
