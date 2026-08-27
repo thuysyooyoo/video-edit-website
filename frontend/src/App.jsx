@@ -627,12 +627,47 @@ export default function App() {
             }
 
             setData(json);
-            const firstClip = json.viral_clips[0];
-            setActiveClip(firstClip);
-            setCurrentTime(firstClip.start_time || 0);
-            setCustomTitle(firstClip.title || 'Video Mới');
             
-            // Điều hướng view phù hợp (nếu là viral_ai có nhiều clip -> mở Dashboard)
+            // Chọn clip cuối cùng user đang sửa, hoặc clip đầu tiên
+            const targetClipId = json.last_clip_id || json.viral_clips[0].id;
+            const targetClip = json.viral_clips.find(c => c.id === targetClipId) || json.viral_clips[0];
+            
+            setActiveClip(targetClip);
+            setCurrentTime(targetClip.start_time || 0);
+            setCustomTitle(targetClip.title || 'Video Mới');
+            
+            // Thử nạp lại trạng thái lưu tạm trực tiếp (nếu có)
+            const videoId = json.video_metadata?.id || 'default';
+            const localKey = `opus_saved_project_${videoId}_${targetClip.id}`;
+            const localSaved = localStorage.getItem(localKey);
+            const p = localSaved ? JSON.parse(localSaved) : json.editor_state;
+            
+            if (p) {
+              if (p.customTitle) setCustomTitle(p.customTitle);
+              if (p.fontStyle) setFontStyle(p.fontStyle);
+              if (p.captionPreset) setCaptionPreset(p.captionPreset);
+              if (p.captionEffect) setCaptionEffect(p.captionEffect);
+              if (p.titleConfig) setTitleConfig(p.titleConfig);
+              if (p.captionConfig) setCaptionConfig(p.captionConfig);
+              if (p.brandConfig) setBrandConfig(p.brandConfig);
+              if (p.textLayers) setTextLayers(p.textLayers);
+              if (p.animatedStickers) setAnimatedStickers(p.animatedStickers);
+              if (p.brolls) setBrolls(p.brolls);
+              if (p.soundFxMarkers) setSoundFxMarkers(p.soundFxMarkers);
+              if (p.excludedWordIndices) setExcludedWordIndices(new Set(p.excludedWordIndices));
+              if (p.excludedPauseIndices) setExcludedPauseIndices(new Set(p.excludedPauseIndices));
+              if (p.aspectRatio) setAspectRatio(p.aspectRatio);
+              if (p.videoLayout) setVideoLayout(p.videoLayout);
+              if (p.activeTransition) setActiveTransition(p.activeTransition);
+              if (p.speechEnhance !== undefined) setSpeechEnhance(p.speechEnhance);
+              if (p.clip?.scenes && p.clip.scenes.length > 0) {
+                setActiveClip(p.clip);
+              } else if (p.scenes && p.scenes.length > 0) {
+                setActiveClip({ ...targetClip, scenes: p.scenes });
+              }
+            }
+            
+            // Điều hướng view phù hợp
             if (json.processing_mode === 'viral_ai' && json.viral_clips.length > 1) {
               setCurrentView('dashboard');
             } else {
@@ -2039,11 +2074,16 @@ export default function App() {
 
     try {
       await saveProjectToVault(projectState);
+      const videoId = data?.video_metadata?.id || 'default';
+      const localKey = `opus_saved_project_${videoId}_${activeClip.id}`;
+      localStorage.setItem(localKey, JSON.stringify(projectState));
+      
       localStorage.setItem('opus_current_project', JSON.stringify({
         ...data,
-        editor_state: projectState
+        editor_state: projectState,
+        last_clip_id: activeClip.id
       }));
-      alert(`✅ ĐÃ LƯU DỰ ÁN VÀO TRÌNH DUYỆT THÀNH CÔNG!\n\nDự án "${customTitle || activeClip.title}" đã được lưu trữ an toàn trong IndexedDB của máy bạn.`);
+      alert(`✅ ĐÃ LƯU DỰ ÁN VÀO TRÌNH DUYỆT THÀNH CÔNG!\n\nDự án "${customTitle || activeClip.title}" đã được lưu trữ an toàn trong máy bạn.`);
     } catch (err) {
       console.error("Save project error:", err);
       alert(`Lỗi lưu dự án: ${err.message}`);
