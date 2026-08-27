@@ -352,9 +352,14 @@ export default function OpusCanvasPreview({
   };
 
   // Ưu tiên B-roll ở lớp trên cùng (Reverse array lookup)
-  // BUG #7 FIX: Only use absolute time matching to prevent double-trigger
+  // Hỗ trợ cả mốc thời gian tuyệt đối (Absolute) và tương đối theo clip (Relative)
   const activeBroll = [...brolls].reverse().find(b => {
-    return currentTime >= (b.start - 0.05) && currentTime <= (b.end + 0.05);
+    const bStart = b.start ?? 0;
+    const bEnd = b.end || (bStart + (b.duration || 4));
+    const isAbsMatch = currentTime >= (bStart - 0.05) && currentTime <= (bEnd + 0.05);
+    const relTime = currentTime - clipStart;
+    const isRelMatch = relTime >= (bStart - 0.05) && relTime <= (bEnd + 0.05);
+    return isAbsMatch || isRelMatch;
   });
 
   // Sync B-Roll video with main player

@@ -670,18 +670,19 @@ export function drawKaraokeCaptions(
   const cleanFontFamily = rawFontFamily.replace(/['"]/g, '');
   const fontWeight = fontStyle.fontWeight || '900';
 
-  // 🌟 Cỡ chữ chuẩn đồng dạng quang học trên Canvas 1080p (Phản ánh 100% mọi thao tác kéo to/nhỏ trên Preview)
-  let baseFontSize = Math.round((fontStyle.fontSize || 40) * 2.2 * scale);
+  // 🌟 Cỡ chữ chuẩn viral 1080p (To rõ, sắc nét, chiếm 65-80% bề ngang khung hình)
+  let baseFontSize = Math.max(68, Math.round((fontStyle.fontSize || 40) * 2.5 * scale));
   const textColor = fontStyle.textColor || '#ffffff';
   const highlightColor = fontStyle.highlightColor || '#22c55e';
   const effect = fontStyle.effect || captionConfig.effect || 'pop'; // 'pop' | 'pill' | 'glow'
   const isUppercase = fontStyle.isUppercase !== false && fontStyle.uppercase !== false;
   const showEmoji = fontStyle.aiEmoji === true || captionConfig.aiEmoji === true;
   
-  // Xác định độ dày viền: nếu strokeWidth là 0 hoặc hasStroke=false thì tắt hoàn toàn viền đen
+  // Xác định độ dày viền an toàn: giới hạn tối đa 10% cỡ chữ để không bao giờ bị nghẹt nét chữ
   const rawStrokeWidth = fontStyle.strokeWidth !== undefined ? fontStyle.strokeWidth : (fontStyle.hasStroke === false ? 0 : 6);
   const strokeColor = fontStyle.strokeColor || '#000000';
-  const scaledStrokeWidth = rawStrokeWidth > 0 ? Math.max(2, Math.round(rawStrokeWidth * 1.5 * scale)) : 0;
+  const maxSafeStroke = Math.round(baseFontSize * 0.10);
+  const scaledStrokeWidth = rawStrokeWidth > 0 ? Math.min(maxSafeStroke, Math.max(2, Math.round(rawStrokeWidth * 1.2 * scale))) : 0;
 
   ctx.save();
   ctx.translate(posX, posY);
@@ -707,10 +708,10 @@ export function drawKaraokeCaptions(
 
   let rawTotalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
   
-  // 📐 Thuật toán Auto-Fit Scale Down: Nếu cụm từ quá dài (> 940px), tự động co nhẹ cỡ chữ vừa khít khung hình
-  const maxAllowedWidth = targetWidth - 140;
+  // 📐 Thuật toán Auto-Fit Safe Margin: Nếu cụm từ quá dài (> 960px), tự động co nhẹ cỡ chữ vừa khít khung hình
+  const maxAllowedWidth = targetWidth - 120;
   if (rawTotalWidth > maxAllowedWidth) {
-    const autoFitRatio = Math.max(0.75, maxAllowedWidth / rawTotalWidth);
+    const autoFitRatio = Math.max(0.70, maxAllowedWidth / rawTotalWidth);
     baseFontSize = Math.round(baseFontSize * autoFitRatio);
     ctx.font = `${fontWeight} ${baseFontSize}px "${cleanFontFamily}", "Be Vietnam Pro", "Inter", "Segoe UI", sans-serif`;
     spaceWidth = ctx.measureText(' ').width;
@@ -732,18 +733,18 @@ export function drawKaraokeCaptions(
       
       if (effect === 'pill') {
         // 💊 Hiệu ứng Pill-Box: Hộp nền vàng/đỏ bo góc ôm từ
-        const pillPadX = 16 * scale;
-        const pillPadY = 8 * scale;
+        const pillPadX = 20 * scale;
+        const pillPadY = 10 * scale;
         const pillW = item.width + pillPadX * 2;
         const pillH = baseFontSize * 1.35 + pillPadY * 2;
         const pillX = currX - pillPadX;
         const pillY = -pillH / 2;
 
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        ctx.shadowBlur = 16;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 18;
         ctx.shadowOffsetY = 4;
-        drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 16 * scale);
+        drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 18 * scale);
         ctx.fillStyle = fontStyle.pillBgColor || '#facc15';
         ctx.fill();
         ctx.restore();
@@ -754,15 +755,15 @@ export function drawKaraokeCaptions(
       } else if (effect === 'glow') {
         // ✨ Hiệu ứng Cyberpunk Neon Glow
         ctx.translate(wordCenterX, 0);
-        ctx.scale(1.12, 1.12);
+        ctx.scale(1.16, 1.16);
         ctx.translate(-wordCenterX, 0);
 
         ctx.shadowColor = fontStyle.glowColor || highlightColor || '#00f0ff';
-        ctx.shadowBlur = 24;
+        ctx.shadowBlur = 28;
 
         if (scaledStrokeWidth > 0) {
           ctx.strokeStyle = strokeColor;
-          ctx.lineWidth = scaledStrokeWidth * 1.4;
+          ctx.lineWidth = scaledStrokeWidth * 1.3;
           ctx.lineJoin = 'round';
           ctx.strokeText(item.text, currX, 0);
         }
@@ -776,20 +777,20 @@ export function drawKaraokeCaptions(
         
         if (isHighlightActive) {
           ctx.translate(wordCenterX, 0);
-          ctx.scale(1.15, 1.15);
+          ctx.scale(1.20, 1.20);
           ctx.translate(-wordCenterX, 0);
         }
 
         if (scaledStrokeWidth > 0) {
           ctx.strokeStyle = strokeColor;
-          ctx.lineWidth = scaledStrokeWidth * 1.3;
+          ctx.lineWidth = scaledStrokeWidth * 1.2;
           ctx.lineJoin = 'round';
           ctx.strokeText(item.text, currX, 0);
         }
 
         if (fontStyle.hasShadow !== false && scaledStrokeWidth === 0) {
           ctx.shadowColor = fontStyle.shadowColor || 'rgba(0, 0, 0, 0.7)';
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 14;
         }
 
         ctx.fillStyle = isHighlightActive ? highlightColor : textColor;
@@ -812,7 +813,7 @@ export function drawKaraokeCaptions(
       // ⚪ TỪ XUNG QUANH (INACTIVE WORDS)
       if (scaledStrokeWidth > 0) {
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = scaledStrokeWidth * 1.1;
+        ctx.lineWidth = scaledStrokeWidth;
         ctx.lineJoin = 'round';
         ctx.strokeText(item.text, currX, 0);
       }
