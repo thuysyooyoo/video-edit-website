@@ -643,7 +643,7 @@ export function drawBrandLogo(ctx, brandConfig, logoImgElement, targetWidth = 10
 }
 
 /**
- * 5. Vẽ Phụ Đề Karaoke Chuyển Động Chuẩn (Cố định cụm câu, Active Word Pop/Glow, Không nhảy từ, Không lẫn rác)
+ * 5. Vẽ Phụ Đề Karaoke Chuyển Động Chuẩn (Đồng Dạng 1:1 Bố Cục Không Gian 1080p, Active Word Pop/Glow, Không nhảy từ)
  */
 export function drawKaraokeCaptions(
   ctx, 
@@ -662,13 +662,16 @@ export function drawKaraokeCaptions(
 
   const activePhrase = group.words;
 
+  // 📐 TỌA ĐỘ & TỶ LỆ BỐ CỤC KHÔNG GIAN ĐỒNG DẠNG (Spatial Coordinate & Proportion System)
   const posX = (captionConfig.pos?.x ?? 50) / 100 * targetWidth;
   const posY = (captionConfig.pos?.y ?? 84) / 100 * targetHeight;
   const scale = (captionConfig.scale ?? 100) / 100;
   const rawFontFamily = fontStyle.fontFamily || 'Montserrat';
   const cleanFontFamily = rawFontFamily.replace(/['"]/g, '');
   const fontWeight = fontStyle.fontWeight || '900';
-  const baseFontSize = (fontStyle.fontSize || 40) * 1.9 * scale;
+
+  // 🌟 Cỡ chữ chuẩn đồng dạng quang học trên Canvas 1080p (Phản ánh 100% mọi thao tác kéo to/nhỏ trên Preview)
+  let baseFontSize = Math.round((fontStyle.fontSize || 40) * 2.2 * scale);
   const textColor = fontStyle.textColor || '#ffffff';
   const highlightColor = fontStyle.highlightColor || '#22c55e';
   const effect = fontStyle.effect || captionConfig.effect || 'pop'; // 'pop' | 'pill' | 'glow'
@@ -678,6 +681,7 @@ export function drawKaraokeCaptions(
   // Xác định độ dày viền: nếu strokeWidth là 0 hoặc hasStroke=false thì tắt hoàn toàn viền đen
   const rawStrokeWidth = fontStyle.strokeWidth !== undefined ? fontStyle.strokeWidth : (fontStyle.hasStroke === false ? 0 : 6);
   const strokeColor = fontStyle.strokeColor || '#000000';
+  const scaledStrokeWidth = rawStrokeWidth > 0 ? Math.max(2, Math.round(rawStrokeWidth * 1.5 * scale)) : 0;
 
   ctx.save();
   ctx.translate(posX, posY);
@@ -686,8 +690,8 @@ export function drawKaraokeCaptions(
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  // Tính toán chiều rộng toàn bộ cụm từ để căn giữa & tự động co dãn chống tràn 2 mép
-  const spaceWidth = ctx.measureText(' ').width;
+  // Đo đạc kích thước từng từ
+  let spaceWidth = ctx.measureText(' ').width;
   const wordMetrics = activePhrase.map(w => {
     let cleanWord = (w.word || '').trim().replace(/^["']+|["']+$/g, '');
     const rawText = isUppercase ? cleanWord.toUpperCase() : cleanWord;
@@ -701,14 +705,19 @@ export function drawKaraokeCaptions(
     };
   });
 
-  const rawTotalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
+  let rawTotalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
   
-  // 📐 Thuật toán Auto-Fit Scale Down: Nếu cụm từ dài hơn 940px, tự động co chữ để không tràn mép màn hình
+  // 📐 Thuật toán Auto-Fit Scale Down: Nếu cụm từ quá dài (> 940px), tự động co nhẹ cỡ chữ vừa khít khung hình
   const maxAllowedWidth = targetWidth - 140;
-  const autoFitScale = rawTotalWidth > maxAllowedWidth ? Math.max(0.7, maxAllowedWidth / rawTotalWidth) : 1.0;
-  
-  if (autoFitScale < 1.0) {
-    ctx.scale(autoFitScale, autoFitScale);
+  if (rawTotalWidth > maxAllowedWidth) {
+    const autoFitRatio = Math.max(0.75, maxAllowedWidth / rawTotalWidth);
+    baseFontSize = Math.round(baseFontSize * autoFitRatio);
+    ctx.font = `${fontWeight} ${baseFontSize}px "${cleanFontFamily}", "Be Vietnam Pro", "Inter", "Segoe UI", sans-serif`;
+    spaceWidth = ctx.measureText(' ').width;
+    wordMetrics.forEach(item => {
+      item.width = ctx.measureText(item.text).width;
+    });
+    rawTotalWidth = wordMetrics.reduce((sum, item) => sum + item.width, 0) + (wordMetrics.length - 1) * spaceWidth;
   }
 
   let currX = -rawTotalWidth / 2;
@@ -723,8 +732,8 @@ export function drawKaraokeCaptions(
       
       if (effect === 'pill') {
         // 💊 Hiệu ứng Pill-Box: Hộp nền vàng/đỏ bo góc ôm từ
-        const pillPadX = 14 * scale;
-        const pillPadY = 6 * scale;
+        const pillPadX = 16 * scale;
+        const pillPadY = 8 * scale;
         const pillW = item.width + pillPadX * 2;
         const pillH = baseFontSize * 1.35 + pillPadY * 2;
         const pillX = currX - pillPadX;
@@ -734,7 +743,7 @@ export function drawKaraokeCaptions(
         ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
         ctx.shadowBlur = 16;
         ctx.shadowOffsetY = 4;
-        drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 14);
+        drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 16 * scale);
         ctx.fillStyle = fontStyle.pillBgColor || '#facc15';
         ctx.fill();
         ctx.restore();
@@ -751,9 +760,9 @@ export function drawKaraokeCaptions(
         ctx.shadowColor = fontStyle.glowColor || highlightColor || '#00f0ff';
         ctx.shadowBlur = 24;
 
-        if (rawStrokeWidth > 0) {
+        if (scaledStrokeWidth > 0) {
           ctx.strokeStyle = strokeColor;
-          ctx.lineWidth = rawStrokeWidth * 1.4;
+          ctx.lineWidth = scaledStrokeWidth * 1.4;
           ctx.lineJoin = 'round';
           ctx.strokeText(item.text, currX, 0);
         }
@@ -767,20 +776,20 @@ export function drawKaraokeCaptions(
         
         if (isHighlightActive) {
           ctx.translate(wordCenterX, 0);
-          ctx.scale(1.12, 1.12);
+          ctx.scale(1.15, 1.15);
           ctx.translate(-wordCenterX, 0);
         }
 
-        if (rawStrokeWidth > 0) {
+        if (scaledStrokeWidth > 0) {
           ctx.strokeStyle = strokeColor;
-          ctx.lineWidth = rawStrokeWidth * 1.3;
+          ctx.lineWidth = scaledStrokeWidth * 1.3;
           ctx.lineJoin = 'round';
           ctx.strokeText(item.text, currX, 0);
         }
 
-        if (fontStyle.hasShadow !== false && rawStrokeWidth === 0) {
+        if (fontStyle.hasShadow !== false && scaledStrokeWidth === 0) {
           ctx.shadowColor = fontStyle.shadowColor || 'rgba(0, 0, 0, 0.7)';
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
         }
 
         ctx.fillStyle = isHighlightActive ? highlightColor : textColor;
@@ -801,14 +810,14 @@ export function drawKaraokeCaptions(
 
     } else {
       // ⚪ TỪ XUNG QUANH (INACTIVE WORDS)
-      if (rawStrokeWidth > 0) {
+      if (scaledStrokeWidth > 0) {
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = rawStrokeWidth * 1.1;
+        ctx.lineWidth = scaledStrokeWidth * 1.1;
         ctx.lineJoin = 'round';
         ctx.strokeText(item.text, currX, 0);
       }
 
-      if (fontStyle.hasShadow !== false && rawStrokeWidth === 0) {
+      if (fontStyle.hasShadow !== false && scaledStrokeWidth === 0) {
         ctx.shadowColor = fontStyle.shadowColor || 'rgba(0, 0, 0, 0.6)';
         ctx.shadowBlur = 8;
       }
