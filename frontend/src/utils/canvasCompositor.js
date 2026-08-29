@@ -1234,15 +1234,18 @@ export function drawTransitionOverlay(ctx, effect = 'none', targetWidth = 1080, 
     ctx.fillRect(0, 0, targetWidth, targetHeight);
 
   } else if (effect === 'zoom_in') {
-    // 🔍 Hiệu ứng Zoom In: Vòng sóng viền neon 9:16 phóng to tạo điểm nhấn
-    const r = Math.max(80, targetWidth * 0.5 * (1.15 - clampedProg * 0.6) * 1.4);
-    ctx.strokeStyle = `rgba(129, 140, 248, ${clampedProg * 0.85})`;
-    ctx.lineWidth = Math.max(6, 28 * clampedProg);
-    ctx.shadowColor = 'rgba(99, 102, 241, 0.9)';
-    ctx.shadowBlur = 32;
-    ctx.beginPath();
-    ctx.arc(targetWidth / 2, targetHeight / 2, r, 0, Math.PI * 2);
-    ctx.stroke();
+    // 🔍 Hiệu ứng Zoom In: Khung viền neon phóng to tạo điểm nhấn (Khớp 100% với animate-ping của preview)
+    // clampedProg đi từ 1.0 (bắt đầu) về 0.0 (kết thúc)
+    const scale = 0.95 + (1.0 - clampedProg) * 1.05; // Từ 0.95 phóng to lên 2.0
+    const opacity = 0.6 * clampedProg; // Mờ dần từ 0.6 về 0
+    const w = targetWidth * scale;
+    const h = targetHeight * scale;
+    
+    ctx.strokeStyle = `rgba(129, 140, 248, ${opacity})`; // indigo-400
+    ctx.lineWidth = 16;
+    ctx.shadowColor = 'rgba(129, 140, 248, 0.5)';
+    ctx.shadowBlur = 12;
+    ctx.strokeRect((targetWidth - w) / 2, (targetHeight - h) / 2, w, h);
 
   } else if (effect === 'glitch') {
     // 👾 Hiệu ứng Glitch Cyber: Sóng nhiễu màu tím xanh
