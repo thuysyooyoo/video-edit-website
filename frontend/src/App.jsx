@@ -2487,6 +2487,7 @@ export default function App() {
                 <OpusVerticalLayersDrawer
                   isOpen={isLayersDrawerOpen}
                   onClose={() => setIsLayersDrawerOpen(false)}
+                  activeSidebarTab={activeSidebarTab}
                   clipDuration={clipDuration}
                   currentTime={currentTime}
                   onSeek={handleSeek}

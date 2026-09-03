@@ -25,6 +25,7 @@ import { ANIMATION_PRESETS } from './AnimatedStickerItem';
 function OpusVerticalLayersDrawer({
   isOpen = true,
   onClose,
+  activeSidebarTab = '',
   clipDuration = 30,
   currentTime = 0,
   onSeek,
@@ -77,6 +78,7 @@ function OpusVerticalLayersDrawer({
     const tDur = titleConfig.duration ?? 6;
     const tEnd = tStart + tDur;
     const isVisible = titleConfig.visible !== false;
+    const isSelected = activeSidebarTab === 'brand';
 
     layersList.push({
       id: 'layer_header_title',
@@ -84,7 +86,7 @@ function OpusVerticalLayersDrawer({
       name: customTitle || 'Tiêu đề Hook (Header Card)',
       icon: Crown,
       iconColor: 'text-amber-400',
-      bgColor: 'bg-amber-950/30 border-amber-500/40',
+      bgColor: isSelected ? 'bg-amber-950/70 border-amber-500 ring-1 ring-amber-400' : 'bg-amber-950/30 border-amber-500/40',
       tag: 'Header 👑',
       tagColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
       startTime: tStart,
@@ -117,13 +119,15 @@ function OpusVerticalLayersDrawer({
   // 1.5 Captions Layer
   if (captionConfig) {
     const isVisible = captionConfig.visible !== false;
+    const isSelected = activeSidebarTab === 'captions';
+
     layersList.push({
       id: 'layer_captions',
       type: 'captions',
       name: 'Phụ Đề Karaoke',
       icon: Type,
       iconColor: 'text-indigo-400',
-      bgColor: 'bg-indigo-950/30 border-indigo-500/40',
+      bgColor: isSelected ? 'bg-indigo-950/70 border-indigo-500 ring-1 ring-indigo-500' : 'bg-indigo-950/30 border-indigo-500/40',
       tag: 'Captions 💬',
       tagColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
       startTime: 0,
@@ -298,14 +302,14 @@ function OpusVerticalLayersDrawer({
     });
   });
 
-  // Combined count for Header + Text
-  const totalTextAndHeaderCount = (textLayers || []).length + (titleConfig ? 1 : 0);
+  // Combined count for Header + Text + Captions
+  const totalTextAndHeaderCount = (textLayers || []).length + (titleConfig ? 1 : 0) + (captionConfig ? 1 : 0);
 
   // Filtered layers
   const displayedLayers = filterType === 'all' 
     ? layersList 
     : filterType === 'text'
-      ? layersList.filter(l => l.type === 'text' || l.type === 'title')
+      ? layersList.filter(l => l.type === 'text' || l.type === 'title' || l.type === 'captions')
       : layersList.filter(l => l.type === filterType);
 
   const handleLayerDragStart = (e, index, layer) => {

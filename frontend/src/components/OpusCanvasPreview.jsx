@@ -828,6 +828,7 @@ export default function OpusCanvasPreview({
             onClick={(e) => {
               e.stopPropagation();
               setSelectedElement({ type: 'caption', id: null });
+              if (onSelectElementToCustomize) onSelectElementToCustomize('captions');
             }}
             title="Kéo di chuyển, kéo các cạnh để chỉnh độ rộng/cao của khung, kéo góc để zoom"
             className="absolute cursor-move group select-none text-center"
