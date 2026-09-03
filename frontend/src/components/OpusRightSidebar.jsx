@@ -130,6 +130,8 @@ function OpusRightSidebar({
   // Brand Template & Title Customization
   brandConfig,
   setBrandConfig,
+  captionConfig,
+  onUpdateCaptionConfig,
   titleConfig,
   setTitleConfig,
   customTitle,
@@ -2728,7 +2730,7 @@ function OpusRightSidebar({
 
                           {layer.type === 'captions' && (
                             <button
-                              onClick={() => setCaptionConfig && setCaptionConfig(prev => ({ ...prev, visible: !(captionConfig?.visible !== false) }))}
+                              onClick={() => onUpdateCaptionConfig && onUpdateCaptionConfig(prev => ({ ...prev, visible: !(captionConfig?.visible !== false) }))}
                               title={captionConfig?.visible !== false ? "Ẩn Phụ Đề" : "Hiện Phụ Đề"}
                               className={`p-1 rounded-lg transition ${
                                 captionConfig?.visible !== false ? 'text-indigo-400 hover:bg-indigo-500/20' : 'text-slate-500 hover:bg-slate-800'

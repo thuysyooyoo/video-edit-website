@@ -1340,6 +1340,9 @@ export function renderCompositedFrame(ctx, options = {}) {
       }
     },
     'layer_captions': () => {
+      // Đảm bảo không render caption nếu preset là No captions hoặc đã tắt ở preview
+      if (options.captionPreset === 'No captions' || captionConfig?.visible === false) return;
+
       // BUG #2 + #4 FIX: Filter excluded words using local index matching clip scope
       const excludedSet = options.excludedWordIndices || new Set();
       const clipEndTime = clipStartTime + (options.clipDuration || 999999);

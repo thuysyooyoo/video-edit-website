@@ -2631,6 +2631,7 @@ export default function App() {
           titleConfig={titleConfig}
           brandConfig={brandConfig}
           captionConfig={captionConfig}
+          captionPreset={captionPreset}
           fontStyle={fontStyle}
           textLayers={textLayers}
           animatedStickers={animatedStickers}
