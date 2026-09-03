@@ -2495,6 +2495,8 @@ export default function App() {
                   customTitle={customTitle}
                   setCustomTitle={setCustomTitle}
                   onUpdateCustomTitle={setCustomTitle}
+                  captionConfig={captionConfig}
+                  onUpdateCaptionConfig={setCaptionConfig}
                   textLayers={textLayers}
                   onUpdateTextLayer={handleUpdateTextLayer}
                   onRemoveTextLayer={handleRemoveTextLayer}

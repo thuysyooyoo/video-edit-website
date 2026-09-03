@@ -34,6 +34,9 @@ function OpusVerticalLayersDrawer({
   customTitle,
   setCustomTitle,
   onUpdateCustomTitle,
+  // Captions
+  captionConfig,
+  onUpdateCaptionConfig,
   // Text Layers
   textLayers = [],
   onUpdateTextLayer,
@@ -106,6 +109,36 @@ function OpusVerticalLayersDrawer({
       onDelete: () => {
         if (onUpdateTitleConfig) {
           onUpdateTitleConfig(prev => ({ ...prev, visible: false }));
+        }
+      }
+    });
+  }
+
+  // 1.5 Captions Layer
+  if (captionConfig) {
+    const isVisible = captionConfig.visible !== false;
+    layersList.push({
+      id: 'layer_captions',
+      type: 'captions',
+      name: 'Phụ Đề Karaoke',
+      icon: Type,
+      iconColor: 'text-indigo-400',
+      bgColor: 'bg-indigo-950/30 border-indigo-500/40',
+      tag: 'Captions 💬',
+      tagColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+      startTime: 0,
+      duration: clipDuration,
+      endTime: clipDuration,
+      visible: isVisible,
+      rawObj: captionConfig,
+      onToggleVisible: () => {
+        if (onUpdateCaptionConfig) {
+          onUpdateCaptionConfig(prev => ({ ...prev, visible: !isVisible }));
+        }
+      },
+      onDelete: () => {
+        if (onUpdateCaptionConfig) {
+          onUpdateCaptionConfig(prev => ({ ...prev, visible: false }));
         }
       }
     });
