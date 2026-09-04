@@ -909,16 +909,16 @@ export default function App() {
         if (excludedList[i] === chunkEndIdx + 1) {
           chunkEndIdx = excludedList[i];
         } else {
-          const start = Math.max(0, currentClipWords[chunkStartIdx].start - 0.02);
-          const end = currentClipWords[chunkEndIdx].end + 0.04;
+          const start = Math.max(0, Number(currentClipWords[chunkStartIdx].start) - 0.02);
+          const end = Number(currentClipWords[chunkEndIdx].end) + 0.04;
           intervals.push({ start, end });
           chunkStartIdx = excludedList[i];
           chunkEndIdx = excludedList[i];
         }
       }
 
-      const start = Math.max(0, currentClipWords[chunkStartIdx].start - 0.02);
-      const end = currentClipWords[chunkEndIdx].end + 0.04;
+      const start = Math.max(0, Number(currentClipWords[chunkStartIdx].start) - 0.02);
+      const end = Number(currentClipWords[chunkEndIdx].end) + 0.04;
       intervals.push({ start, end });
     }
 
@@ -1212,6 +1212,27 @@ export default function App() {
       if (actualStartIndex !== -1 && actualEndIndex !== -1) {
         const updatedWords = [...data.transcript.words];
         updatedWords.splice(actualStartIndex, (actualEndIndex - actualStartIndex) + 1, ...replacements);
+        
+        // Cập nhật excludedWordIndices để không bị lệch (shift)
+        const oldLength = (actualEndIndex - actualStartIndex) + 1;
+        const newLength = replacements.length;
+        const delta = newLength - oldLength;
+        if (delta !== 0) {
+          const newExcluded = new Set();
+          const startLocalIdx = indices[0];
+          const endLocalIdx = indices[indices.length - 1];
+          excludedWordIndices.forEach(idx => {
+            if (idx < startLocalIdx) {
+              newExcluded.add(idx);
+            } else if (idx > endLocalIdx) {
+              newExcluded.add(idx + delta);
+            }
+          });
+          setExcludedWordIndices(newExcluded);
+          // Xóa các pause đã chọn để tránh lẹm âm thanh do index pause bị xáo trộn khi mảng từ thay đổi kích thước
+          setExcludedPauseIndices(new Set());
+        }
+
         setData({
           ...data,
           transcript: {
@@ -2112,7 +2133,8 @@ export default function App() {
       const videoId = data?.video_metadata?.id || 'default';
       const localSaved = localStorage.getItem(`opus_saved_project_${videoId}_${targetClip.id}`) || localStorage.getItem(`opus_saved_project_${targetClip.id}`);
       const backendState = data?.editor_state;
-      const p = localSaved ? JSON.parse(localSaved) : (backendState || null);
+      const validBackendState = backendState?.clip_id === targetClip.id ? backendState : null;
+      const p = localSaved ? JSON.parse(localSaved) : validBackendState;
       if (p) {
         if (p.customTitle) setCustomTitle(p.customTitle);
         if (p.transcriptWords && data?.transcript) {
@@ -2266,7 +2288,7 @@ export default function App() {
             >
               <OpusTranscript
                 clip={activeClip}
-                words={data?.transcript?.words || []}
+                words={currentClipWords}
                 currentTime={currentTime}
                 onSeekWord={handleSeek}
                 excludedWordIndices={excludedWordIndices}
@@ -2303,7 +2325,7 @@ export default function App() {
               <OpusCanvasPreview
                 videoRef={videoRef}
                 clip={activeClip}
-                words={data?.transcript?.words || []}
+                words={currentClipWords}
                 currentTime={currentTime}
                 sourceVideoUrl={data?.video_metadata?.blob_url || data?.video_metadata?.video_path || '/api/stream/source'}
                 captionPreset={captionPreset}

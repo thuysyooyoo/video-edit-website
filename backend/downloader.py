@@ -128,7 +128,41 @@ def prepare_local_video(file_path: str) -> dict:
     duration = 0.0
     try:
         import subprocess
-        from backend.config import FFMPEG_PATH
+        import os
+        from backend.config import FFMPEG_PATH, DOWNLOADS_DIR
+        
+        # ⚡ Tự động chuẩn hóa video về tốc độ khung hình cố định (CFR - 30fps)
+        # Khắc phục triệt để lỗi lệch nhịp A/V (A/V Sync Drift) ở cuối các video dài quay bằng điện thoại/OBS
+        if not is_audio:
+            # 🧹 Dọn dẹp các file cfr_* cũ hơn 12 tiếng để tránh tích tụ file rác
+            try:
+                import time
+                now_ts = time.time()
+                for old_f in DOWNLOADS_DIR.glob("cfr_*"):
+                    if old_f.is_file() and (now_ts - old_f.stat().st_mtime) > 12 * 3600:
+                        try:
+                            old_f.unlink()
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+            cfr_path = DOWNLOADS_DIR / f"cfr_{os.urandom(4).hex()}_{path.name}"
+            print(f"\n[Downloader] ⚙️ Đang chuẩn hóa video về Constant Frame Rate (CFR 30fps) để chống lệch nhịp (Quá trình này chạy ngầm siêu tốc)...", flush=True)
+            try:
+                cmd = [
+                    FFMPEG_PATH, "-y", "-i", str(path.resolve()),
+                    "-vsync", "cfr", "-r", "30",
+                    "-c:v", "libx264", "-crf", "23", "-preset", "ultrafast",
+                    "-c:a", "copy",
+                    str(cfr_path)
+                ]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                path = cfr_path
+                print(f"[Downloader] ✅ Chuẩn hóa CFR thành công: {path.name}", flush=True)
+            except Exception as e:
+                print(f"[Downloader] ⚠️ Lỗi chuẩn hóa CFR ({e}). Bỏ qua, tiếp tục dùng video gốc.", flush=True)
+
         # Use ffprobe/ffmpeg to get duration
         cmd = [
             FFMPEG_PATH, "-i", str(path.resolve())

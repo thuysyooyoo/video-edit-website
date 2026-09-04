@@ -24,7 +24,14 @@ async function sendChunkToGroq(wavBlob, apiKey, promptText = '', retryCount = 0)
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout cho mỗi phân đoạn
+  const timeoutMs = 60000; // 60s timeout thoải mái cho mỗi phân đoạn
+  const timeoutId = setTimeout(() => {
+    try {
+      controller.abort(new Error('TIMEOUT_GROQ'));
+    } catch (e) {
+      controller.abort();
+    }
+  }, timeoutMs);
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -54,9 +61,14 @@ async function sendChunkToGroq(wavBlob, apiKey, promptText = '', retryCount = 0)
     return await response.json();
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError' && retryCount < 2) {
-      console.warn(`[Groq Timeout] Phân đoạn bị quá 35s, đang thử lại lần ${retryCount + 1}...`);
+    const isAbort = err.name === 'AbortError' || err.message === 'TIMEOUT_GROQ' || (err.message && err.message.includes('aborted'));
+    if (isAbort && retryCount < 2) {
+      console.warn(`[Groq Timeout] Phân đoạn bị quá thời gian chờ, đang thử lại lần ${retryCount + 1}/2...`);
+      await new Promise(res => setTimeout(res, 1500));
       return sendChunkToGroq(wavBlob, apiKey, promptText, retryCount + 1);
+    }
+    if (isAbort) {
+      throw new Error('Đường truyền mạng đến Groq Whisper API bị quá thời gian chờ (Timeout). Vui lòng kiểm tra lại kết nối mạng Internet hoặc thử lại.');
     }
     throw err;
   }
@@ -81,9 +93,9 @@ export async function transcribeWithGroqWhisper(audioResult, apiKey = '', onProg
     throw new Error('Dữ liệu sóng âm PCM 16kHz không hợp lệ.');
   }
 
-  // ⚡ Phân đoạn 240 giây (4 phút) mỗi phân đoạn (Chỉ ~7.68 MB WAV, luôn an toàn dưới mức trần 25MB của Groq)
-  const segmentDuration = 240.0;
-  const overlapSec = 1.5; // Gối đầu 1.5 giây giữa các phân đoạn chống đứt từ
+  // ⚡ Phân đoạn 90 giây (1.5 phút) mỗi phân đoạn (Chỉ ~2.88 MB WAV, tối ưu truyền tải siêu tốc, không bị nghẽn mạng)
+  const segmentDuration = 90.0;
+  const overlapSec = 1.0; // Gối đầu 1.0 giây giữa các phân đoạn chống đứt từ
   const numSegments = Math.max(1, Math.ceil(duration / segmentDuration));
 
   const allWords = [];
